@@ -1,0 +1,4 @@
+# Netlify configuration for EcoRound Holsters (static site)
+[build]
+  command = "echo 'No build step — static site'"
+  publish = "."
