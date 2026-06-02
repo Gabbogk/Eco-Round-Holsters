@@ -217,17 +217,31 @@
     </main>
 
     <script>
+        var SIGNUP_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyyaG9Q_G8m62eg5Hdxh-zem9kdA805aBLFN8g4kFkrSGzuy3nE98N9f3w/exec';
         document.getElementById('notifyForm').addEventListener('submit', function (e) {
             e.preventDefault();
             var input = this.querySelector('input');
             var note = document.getElementById('notifyNote');
             var btn = this.querySelector('button');
-            if (input.value) {
+            var email = input.value.trim();
+            if (!email) return;
+            btn.disabled = true;
+            btn.textContent = 'Sending…';
+            fetch(SIGNUP_ENDPOINT, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: new URLSearchParams({ email: email, source: 'coming-soon' })
+            }).then(function () {
                 input.value = '';
                 btn.textContent = "You're on the list!";
                 note.textContent = "Thanks — we'll email you the moment we go live.";
+            }).catch(function () {
+                btn.textContent = 'Notify Me';
+                note.textContent = 'Something went wrong — please try again.';
+            }).finally(function () {
+                btn.disabled = false;
                 setTimeout(function () { btn.textContent = 'Notify Me'; }, 4000);
-            }
+            });
         });
     </script>
 </body>
