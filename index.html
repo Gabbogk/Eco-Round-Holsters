@@ -91,7 +91,31 @@
         .cs-note {
             color: var(--color-text-dim);
             font-size: 0.82rem;
+            margin-bottom: 24px;
+        }
+
+        .cs-contact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
             margin-bottom: 52px;
+        }
+
+        .cs-contact svg {
+            color: var(--color-primary);
+            flex-shrink: 0;
+        }
+
+        .cs-contact a {
+            color: var(--color-primary-hover);
+            font-weight: 600;
+        }
+
+        .cs-contact a:hover {
+            text-decoration: underline;
         }
 
         .cs-trust {
@@ -156,6 +180,11 @@
             <button type="submit" class="btn btn-primary">Notify Me</button>
         </form>
         <p class="cs-note" id="notifyNote">Be the first to know when we launch. No spam, ever.</p>
+
+        <p class="cs-contact">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+            <span>Questions? Email us at <a href="mailto:info@ecoroundholsters.com">info@ecoroundholsters.com</a></span>
+        </p>
 
         <div class="cs-trust">
             <div class="cs-trust-item">
