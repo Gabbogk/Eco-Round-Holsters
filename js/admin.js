@@ -15,22 +15,17 @@
     var loginError = document.getElementById('loginError');
     var loginBtn = document.getElementById('loginBtn');
 
-    // ---- JSONP (Apps Script doesn't send CORS headers, so we use a <script> tag) ----
-    function jsonp(params) {
-        return new Promise(function (resolve, reject) {
-            var cb = '__ecoCb_' + Math.floor(Math.random() * 1e9);
-            var script = document.createElement('script');
-            var timer = setTimeout(function () { cleanup(); reject(new Error('timeout')); }, 15000);
-            function cleanup() { clearTimeout(timer); try { delete window[cb]; } catch (e) { window[cb] = undefined; } if (script.parentNode) script.parentNode.removeChild(script); }
-            window[cb] = function (data) { cleanup(); resolve(data); };
-            var qs = Object.keys(params).map(function (k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); }).join('&');
-            script.src = ENDPOINT + '?' + qs + '&callback=' + cb;
-            script.onerror = function () { cleanup(); reject(new Error('network')); };
-            document.body.appendChild(script);
+    // ---- fetch through our own server (same-origin proxy; no CORS, ad-blocker-proof) ----
+    function fetchData(key) {
+        return fetch('/api/signups', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ key: key })
+        }).then(function (r) {
+            if (!r.ok) throw new Error('http ' + r.status);
+            return r.json();
         });
     }
-
-    function fetchData(key) { return jsonp({ key: key }); }
 
     // ---- auth ----
     function doLogin(key, isAuto) {
