@@ -3,3 +3,5 @@ node_modules/
 Thumbs.db
 .claude/
 progress.md
+.env
+.env.local

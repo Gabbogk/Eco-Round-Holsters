@@ -80,6 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // No search backend yet — send shoppers to the full catalog to browse.
+    const searchForm = searchModal.querySelector('.search-form');
+    searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        window.location.href = 'shop.html';
+    });
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && searchModal.classList.contains('active')) {
             searchModal.classList.remove('active');
@@ -121,20 +128,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ===== Newsletter Form =====
+    // Posts to the same Google Apps Script endpoint as the Coming Soon "Notify Me"
+    // form (de-duplicated server-side), so subscribers land in the same sheet.
+    const NEWSLETTER_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyyaG9Q_G8m62eg5Hdxh-zem9kdA805aBLFN8g4kFkrSGzuy3nE98N9f3w/exec';
     const newsletterForm = document.getElementById('newsletterForm');
     newsletterForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const input = newsletterForm.querySelector('input');
-        if (input.value) {
+        const btn = newsletterForm.querySelector('button');
+        const email = input.value.trim();
+        if (!email) return;
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Sending…';
+        fetch(NEWSLETTER_ENDPOINT, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: new URLSearchParams({ email: email, source: 'newsletter' })
+        }).then(() => {
             input.value = '';
-            const btn = newsletterForm.querySelector('button');
-            btn.textContent = 'SUBSCRIBED!';
+            btn.textContent = 'Subscribed!';
             btn.style.background = '#2d7a4a';
+        }).catch(() => {
+            btn.textContent = 'Try again';
+        }).finally(() => {
+            btn.disabled = false;
             setTimeout(() => {
-                btn.textContent = 'SUBSCRIBE';
+                btn.textContent = original;
                 btn.style.background = '';
-            }, 3000);
-        }
+            }, 4000);
+        });
     });
 
     // ===== Scroll Animations =====

@@ -86,9 +86,9 @@
 <body>
     <header class="pdp-header">
         <a href="/home.html" class="logo"><span class="logo-eco">ECO</span><span class="logo-round">ROUND</span></a>
-        <div class="pdp-cart snipcart-checkout">
+        <div class="pdp-cart" data-cart-open>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-            <span>Cart (<span class="snipcart-items-count">0</span>)</span>
+            <span>Cart (<span class="cart-count">0</span>)</span>
         </div>
     </header>
 
@@ -111,11 +111,11 @@
             <div class="opt-group">
                 <div class="opt-label"><span>Finish</span></div>
                 <div class="opt-row" id="finishRow">
-                    <button class="opt-btn active" data-price="0">Plain Kydex</button>
-                    <button class="opt-btn" data-price="10">Carbon Fiber <span class="add">+$10</span></button>
-                    <button class="opt-btn" data-price="15">Double-Sided Carbon <span class="add">+$15</span></button>
-                    <button class="opt-btn" data-price="15" data-graphic="1">Custom Graphic — Kydex <span class="add">+$15</span></button>
-                    <button class="opt-btn" data-price="20" data-graphic="1">Custom Graphic — Carbon <span class="add">+$20</span></button>
+                    <button class="opt-btn active" data-key="finish-plain" data-price="0">Plain Kydex</button>
+                    <button class="opt-btn" data-key="finish-carbon" data-price="10">Carbon Fiber <span class="add">+$10</span></button>
+                    <button class="opt-btn" data-key="finish-carbon-2sided" data-price="15">Double-Sided Carbon <span class="add">+$15</span></button>
+                    <button class="opt-btn" data-key="finish-graphic-kydex" data-price="15" data-graphic="1">Custom Graphic — Kydex <span class="add">+$15</span></button>
+                    <button class="opt-btn" data-key="finish-graphic-carbon" data-price="20" data-graphic="1">Custom Graphic — Carbon <span class="add">+$20</span></button>
                 </div>
                 <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
             </div>
@@ -134,8 +134,8 @@
             <div class="opt-group">
                 <div class="opt-label"><span>Hand</span></div>
                 <div class="opt-row" id="handRow">
-                    <button class="opt-btn active" data-price="0">Right Hand</button>
-                    <button class="opt-btn" data-price="0">Left Hand</button>
+                    <button class="opt-btn active" data-key="hand-right" data-price="0">Right Hand</button>
+                    <button class="opt-btn" data-key="hand-left" data-price="0">Left Hand</button>
                 </div>
             </div>
 
@@ -143,16 +143,16 @@
             <div class="opt-group">
                 <div class="opt-label"><span>Belt Loop Size</span><span class="req">Included</span></div>
                 <div class="opt-row" id="loopRow">
-                    <button class="opt-btn active" data-price="0">1.5"</button>
-                    <button class="opt-btn" data-price="0">1.75"</button>
-                    <button class="opt-btn" data-price="0">2"</button>
+                    <button class="opt-btn active" data-key="loop-1.5" data-price="0">1.5"</button>
+                    <button class="opt-btn" data-key="loop-1.75" data-price="0">1.75"</button>
+                    <button class="opt-btn" data-key="loop-2" data-price="0">2"</button>
                 </div>
             </div>
 
             <!-- Add-ons -->
             <div class="opt-group">
                 <div class="opt-label"><span>Add-ons</span></div>
-                <label class="addon"><input type="checkbox" data-price="5" id="washerCheck"><span class="nm">Colored Washers (set of 4)</span><span class="pr">+$5</span></label>
+                <label class="addon"><input type="checkbox" data-key="addon-washers" data-price="5" id="washerCheck"><span class="nm">Colored Washers (set of 4)</span><span class="pr">+$5</span></label>
                 <div class="washer-color" id="washerColor">
                     <div class="opt-row">
                         <button class="opt-btn active" data-price="0">Red</button>
@@ -163,7 +163,7 @@
                         <button class="opt-btn" data-price="0">Gold</button>
                     </div>
                 </div>
-                <label class="addon"><input type="checkbox" data-price="10"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
+                <label class="addon"><input type="checkbox" data-key="addon-molding" data-price="10"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
             </div>
 
             <button class="add-cart" id="addCart">Add to Cart — <span id="btnPrice">$65.00</span></button>
@@ -178,6 +178,7 @@
         </div>
     </main>
 
+    <script src="js/cart.js"></script>
     <script>
         var BASE = 65;
         var GUNS = [
@@ -284,10 +285,18 @@
             var finishTxt = document.querySelector('#finishRow .opt-btn.active').childNodes[0].textContent.trim();
             var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
             var loopTxt = document.querySelector('#loopRow .opt-btn.active').textContent.trim();
-            var summary = finishTxt + ' · ' + handTxt + ' · ' + loopTxt + ' loop' + (addons.length ? ' · ' + addons.join(', ') : '') + (state.washer ? ' (' + state.washerColor + ')' : '');
-            // NOTE: when Snipcart is connected, add the configured item to the cart here.
+            var summary = finishTxt + ' · ' + handTxt + ' · ' + loopTxt + ' loop' + (addons.length ? ' · ' + addons.join(', ') : '');
+            var options = [];
+            document.querySelectorAll('.opt-row .opt-btn.active[data-key]').forEach(function (b) { options.push(b.dataset.key); });
+            document.querySelectorAll('.addon input:checked[data-key]').forEach(function (c) { options.push(c.dataset.key); });
+            Cart.add({
+                id: 'ecosnug-owb', name: 'EcoSnug OWB',
+                gun: state.gun, washerColor: state.washer ? state.washerColor : '',
+                options: options, summary: summary, unit: Math.round(total * 100)
+            });
+            Cart.open();
             msg.className = 'cart-msg ok';
-            msg.textContent = '✓ Configured: ' + state.gun + ' — ' + summary + ' = ' + money(total) + '. (Checkout activates once Snipcart is connected.)';
+            msg.textContent = '✓ Added to cart.';
         });
 
         recalc();

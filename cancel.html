@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Canceled | EcoRound Holsters</title>
+    <meta name="robots" content="noindex">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .res-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 56px 24px;
+            background: radial-gradient(circle at 50% -10%, rgba(74,124,89,.12), transparent 55%), linear-gradient(135deg, #141414 0%, #1d271f 50%, #141414 100%); }
+        .res-logo { transform: scale(1.3); margin-bottom: 36px; }
+        .res-icon { width: 76px; height: 76px; border-radius: 50%; background: var(--color-bg-card); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); margin-bottom: 24px; }
+        .res-wrap h1 { font-family: var(--font-heading); font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: 2px; margin-bottom: 16px; }
+        .res-lead { max-width: 540px; color: var(--color-text-muted); font-size: 1.05rem; line-height: 1.75; margin: 0 auto 32px; }
+        .res-ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    </style>
+</head>
+<body>
+    <main class="res-wrap">
+        <a href="/home.html" class="logo res-logo">
+            <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+            <span class="logo-sub">HOLSTERS</span>
+        </a>
+
+        <div class="res-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <h1>CHECKOUT CANCELED</h1>
+        <p class="res-lead">No worries — your payment was not processed and your cart is still saved. Pick up right where you left off whenever you're ready.</p>
+
+        <div class="res-ctas">
+            <a href="shop.html" class="btn btn-primary" id="reopenCart">Return to Cart</a>
+            <a href="shop.html" class="btn btn-outline">Keep Shopping</a>
+        </div>
+    </main>
+
+    <script src="js/cart.js"></script>
+    <script>
+        // Cart is preserved on cancel. Let the primary button reopen the drawer.
+        document.getElementById('reopenCart').addEventListener('click', function (e) {
+            if (window.Cart && Cart.count() > 0) { e.preventDefault(); Cart.open(); }
+        });
+    </script>
+</body>
+</html>
