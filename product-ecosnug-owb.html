@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSnug OWB | EcoRound Holsters</title>
+    <meta name="description" content="The EcoSnug OWB — premium outside-the-waistband Kydex holster, custom-molded for 400+ firearms. Belt-loop carry, adjustable retention, handcrafted in the USA, lifetime warranty.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .pdp-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px; border-bottom: 1px solid var(--color-border);
+            position: sticky; top: 0; background: rgba(15,15,15,.95); backdrop-filter: blur(12px); z-index: 50;
+        }
+        .pdp-cart { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); cursor: pointer; font-size: .9rem; }
+        .pdp-cart:hover { color: var(--color-text); }
+        .breadcrumb { max-width: var(--container); margin: 0 auto; padding: 20px 24px 0; font-size: .82rem; color: var(--color-text-dim); }
+        .breadcrumb a:hover { color: var(--color-primary-hover); }
+
+        .pdp { max-width: var(--container); margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; }
+        @media (max-width: 880px) { .pdp { grid-template-columns: 1fr; gap: 28px; } }
+
+        .gallery-main {
+            background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+            aspect-ratio: 1/1; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .gallery-main img { width: 100%; height: 100%; object-fit: cover; }
+        .shown-note { text-align: center; font-size: .78rem; color: var(--color-text-dim); margin-top: 8px; }
+        .gallery-thumbs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
+        .thumb { aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; cursor: pointer; border: 2px solid var(--color-border); background:#fff; padding: 0; }
+        .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .thumb.active { border-color: var(--color-primary); }
+
+        .pdp-title { font-family: var(--font-heading); font-size: 2.1rem; font-weight: 700; letter-spacing: 1px; }
+        .pdp-rating { color: var(--color-star); font-size: .95rem; margin: 4px 0 14px; }
+        .pdp-rating span { color: var(--color-text-dim); margin-left: 8px; }
+        .pdp-price { font-family: var(--font-heading); font-size: 2rem; font-weight: 700; color: var(--color-primary-hover); margin-bottom: 18px; }
+        .pdp-desc { color: var(--color-text-muted); line-height: 1.7; margin-bottom: 26px; font-size: .95rem; }
+
+        .opt-group { margin-bottom: 22px; }
+        .opt-label { display: flex; justify-content: space-between; font-family: var(--font-heading); font-size: .85rem; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+        .opt-label .req { color: var(--color-accent); font-size: .7rem; }
+        .opt-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .opt-btn {
+            padding: 10px 14px; background: var(--color-bg-card); border: 1px solid var(--color-border);
+            border-radius: 8px; color: var(--color-text-muted); cursor: pointer; font-size: .85rem; font-family: var(--font-body); transition: all .15s;
+        }
+        .opt-btn:hover { border-color: var(--color-text-dim); color: var(--color-text); }
+        .opt-btn.active { border-color: var(--color-primary); background: rgba(74,124,89,.12); color: var(--color-text); }
+        .opt-btn .add { color: var(--color-accent); font-size: .78rem; }
+
+        .gun-search { position: relative; }
+        .gun-search input { width: 100%; padding: 12px 16px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: .9rem; font-family: var(--font-body); outline: none; }
+        .gun-search input:focus { border-color: var(--color-primary); }
+        .gun-results { position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 8px; max-height: 240px; overflow-y: auto; z-index: 20; display: none; }
+        .gun-results.show { display: block; }
+        .gun-results div { padding: 10px 14px; font-size: .88rem; cursor: pointer; color: var(--color-text-muted); }
+        .gun-results div:hover { background: var(--color-bg-hover); color: var(--color-text); }
+        .gun-chosen { margin-top: 8px; font-size: .85rem; color: var(--color-primary-hover); display: none; }
+        .gun-chosen.show { display: block; }
+
+        .addon { display: flex; align-items: center; gap: 10px; padding: 11px 14px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 8px; margin-bottom: 8px; cursor: pointer; }
+        .addon input { accent-color: var(--color-primary); width: 16px; height: 16px; }
+        .addon .nm { flex: 1; font-size: .88rem; }
+        .addon .pr { color: var(--color-accent); font-size: .82rem; }
+
+        .graphic-note { display: none; background: rgba(200,169,110,.1); border: 1px solid rgba(200,169,110,.3); border-radius: 8px; padding: 12px 14px; font-size: .82rem; color: var(--color-accent); margin-bottom: 18px; }
+        .graphic-note.show { display: block; }
+        .washer-color { display: none; margin-top: 8px; }
+        .washer-color.show { display: block; }
+
+        .add-cart { width: 100%; padding: 16px; font-family: var(--font-heading); font-size: 1rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius); cursor: pointer; transition: all .2s; }
+        .add-cart:hover { background: var(--color-primary-hover); transform: translateY(-2px); }
+        .cart-msg { text-align: center; font-size: .85rem; margin-top: 12px; min-height: 18px; }
+        .cart-msg.ok { color: var(--color-primary-hover); }
+        .cart-msg.err { color: #e07a6b; }
+
+        .pdp-features { margin-top: 24px; border-top: 1px solid var(--color-border); padding-top: 20px; display: grid; gap: 10px; }
+        .pdp-features li { display: flex; gap: 10px; align-items: center; font-size: .88rem; color: var(--color-text-muted); }
+        .pdp-features svg { color: var(--color-primary); flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <header class="pdp-header">
+        <a href="/home.html" class="logo"><span class="logo-eco">ECO</span><span class="logo-round">ROUND</span></a>
+        <div class="pdp-cart snipcart-checkout">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span>Cart (<span class="snipcart-items-count">0</span>)</span>
+        </div>
+    </header>
+
+    <div class="breadcrumb"><a href="/home.html">Home</a> / <a href="#">OWB Holsters</a> / EcoSnug OWB</div>
+
+    <main class="pdp">
+        <div>
+            <div class="gallery-main"><img id="mainImg" src="images/products/ecosnug-carbon-purple.jpg" alt="EcoSnug OWB"></div>
+            <div class="shown-note">Shown in Purple Carbon Fiber</div>
+            <div class="gallery-thumbs" id="thumbs"></div>
+        </div>
+
+        <div>
+            <h1 class="pdp-title">EcoSnug OWB</h1>
+            <div class="pdp-rating">&#9733;&#9733;&#9733;&#9733;&#9733; <span>Outside-the-Waistband</span></div>
+            <div class="pdp-price" id="price">$65.00</div>
+            <p class="pdp-desc">Built to ride outside the waistband for fast, comfortable all-day carry and an effortless draw. The EcoSnug is precision-molded from premium Kydex with a slim, body-hugging profile that pulls your firearm tight to your side and stays planted on belt loops sized to your rig. Adjustable retention, a clean snag-free design, and that signature audible click. Hand-built and individually inspected in the USA, backed by our lifetime warranty.</p>
+
+            <!-- Finish -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Finish</span></div>
+                <div class="opt-row" id="finishRow">
+                    <button class="opt-btn active" data-price="0">Plain Kydex</button>
+                    <button class="opt-btn" data-price="10">Carbon Fiber <span class="add">+$10</span></button>
+                    <button class="opt-btn" data-price="15">Double-Sided Carbon <span class="add">+$15</span></button>
+                    <button class="opt-btn" data-price="15" data-graphic="1">Custom Graphic — Kydex <span class="add">+$15</span></button>
+                    <button class="opt-btn" data-price="20" data-graphic="1">Custom Graphic — Carbon <span class="add">+$20</span></button>
+                </div>
+                <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
+            </div>
+
+            <!-- Firearm -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Your Firearm</span><span class="req">Required</span></div>
+                <div class="gun-search">
+                    <input type="text" id="gunInput" placeholder="Search your make &amp; model (e.g. Glock 19)…" autocomplete="off">
+                    <div class="gun-results" id="gunResults"></div>
+                </div>
+                <div class="gun-chosen" id="gunChosen"></div>
+            </div>
+
+            <!-- Hand -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Hand</span></div>
+                <div class="opt-row" id="handRow">
+                    <button class="opt-btn active" data-price="0">Right Hand</button>
+                    <button class="opt-btn" data-price="0">Left Hand</button>
+                </div>
+            </div>
+
+            <!-- Belt loop -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Belt Loop Size</span><span class="req">Included</span></div>
+                <div class="opt-row" id="loopRow">
+                    <button class="opt-btn active" data-price="0">1.5"</button>
+                    <button class="opt-btn" data-price="0">1.75"</button>
+                    <button class="opt-btn" data-price="0">2"</button>
+                </div>
+            </div>
+
+            <!-- Add-ons -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Add-ons</span></div>
+                <label class="addon"><input type="checkbox" data-price="5" id="washerCheck"><span class="nm">Colored Washers (set of 4)</span><span class="pr">+$5</span></label>
+                <div class="washer-color" id="washerColor">
+                    <div class="opt-row">
+                        <button class="opt-btn active" data-price="0">Red</button>
+                        <button class="opt-btn" data-price="0">Green</button>
+                        <button class="opt-btn" data-price="0">Blue</button>
+                        <button class="opt-btn" data-price="0">Purple</button>
+                        <button class="opt-btn" data-price="0">Copper</button>
+                        <button class="opt-btn" data-price="0">Gold</button>
+                    </div>
+                </div>
+                <label class="addon"><input type="checkbox" data-price="10"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
+            </div>
+
+            <button class="add-cart" id="addCart">Add to Cart — <span id="btnPrice">$65.00</span></button>
+            <div class="cart-msg" id="cartMsg"></div>
+
+            <ul class="pdp-features">
+                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Lifetime warranty on every holster</li>
+                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Adjustable retention &amp; ride height</li>
+                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Handcrafted &amp; inspected in the USA</li>
+                <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 30-day risk-free trial</li>
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        var BASE = 65;
+        var GUNS = [
+            'Glock 17','Glock 19','Glock 19X','Glock 26','Glock 43','Glock 43X','Glock 45','Glock 48',
+            'Sig Sauer P320','Sig Sauer P365','Sig Sauer P365XL','Sig Sauer P226','Sig Sauer P229','Sig Sauer P938',
+            'Smith & Wesson M&P Shield','Smith & Wesson Shield Plus','Smith & Wesson M&P 2.0','Smith & Wesson CSX',
+            'Springfield Hellcat','Springfield Hellcat Pro','Springfield XD-S','Springfield Echelon','Springfield 1911',
+            'Ruger LCP MAX','Ruger MAX-9','Ruger Security-9','Ruger LC9s',
+            'Beretta 92FS','Beretta PX4 Storm','Beretta APX',
+            'CZ P-10C','CZ P-07','CZ Shadow 2',
+            'HK VP9','HK VP9SK','HK P30',
+            'Walther PDP','Walther PPQ','Walther PPS M2',
+            'Taurus G2C','Taurus G3C','Taurus GX4',
+            'Canik TP9 Elite SC','Canik METE MC9',
+            'Kimber Micro 9','Kimber R7 Mako',
+            'FN 509','FN 509 Tactical'
+        ];
+        var GALLERY = [
+            ['images/products/ecosnug-carbon-purple.jpg','Purple Carbon Fiber']
+        ];
+
+        var state = { finish: 0, hand: 0, loop: 0, addons: 0, gun: '', washer: false, washerColor: 'Red', graphic: false };
+        var mainImg = document.getElementById('mainImg');
+
+        function money(n) { return '$' + n.toFixed(2); }
+        function recalc() {
+            var total = BASE + state.finish + state.hand + state.loop + state.addons;
+            document.getElementById('price').textContent = money(total);
+            document.getElementById('btnPrice').textContent = money(total);
+            return total;
+        }
+        function wireRow(id, onPick) {
+            var row = document.getElementById(id);
+            row.querySelectorAll('.opt-btn').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    row.querySelectorAll('.opt-btn').forEach(function (b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    onPick(btn);
+                    recalc();
+                });
+            });
+        }
+        wireRow('finishRow', function (btn) {
+            state.finish = parseFloat(btn.dataset.price);
+            if (btn.dataset.img) { mainImg.src = btn.dataset.img; }
+            state.graphic = !!btn.dataset.graphic;
+            document.getElementById('graphicNote').classList.toggle('show', state.graphic);
+        });
+        wireRow('handRow', function (btn) { state.hand = parseFloat(btn.dataset.price); });
+        wireRow('loopRow', function (btn) { state.loop = parseFloat(btn.dataset.price); });
+        wireRow('washerColor', function (btn) { state.washerColor = btn.textContent.trim(); });
+
+        function recalcAddons() {
+            var sum = 0;
+            document.querySelectorAll('.addon input').forEach(function (c) { if (c.checked) sum += parseFloat(c.dataset.price); });
+            state.addons = sum;
+            recalc();
+        }
+        document.querySelectorAll('.addon input').forEach(function (c) { c.addEventListener('change', recalcAddons); });
+        document.getElementById('washerCheck').addEventListener('change', function () {
+            state.washer = this.checked;
+            document.getElementById('washerColor').classList.toggle('show', this.checked);
+        });
+
+        var thumbsEl = document.getElementById('thumbs');
+        GALLERY.forEach(function (g) {
+            var b = document.createElement('button');
+            b.className = 'thumb' + (g[0] === mainImg.getAttribute('src') ? ' active' : '');
+            b.innerHTML = '<img src="' + g[0] + '" alt="' + g[1] + '" title="' + g[1] + '">';
+            b.addEventListener('click', function () { mainImg.src = g[0]; });
+            thumbsEl.appendChild(b);
+        });
+
+        var gunInput = document.getElementById('gunInput');
+        var gunResults = document.getElementById('gunResults');
+        var gunChosen = document.getElementById('gunChosen');
+        function renderGuns(q) {
+            q = q.toLowerCase();
+            var matches = GUNS.filter(function (g) { return g.toLowerCase().indexOf(q) >= 0; }).slice(0, 30);
+            gunResults.innerHTML = matches.map(function (g) { return '<div>' + g + '</div>'; }).join('') || '<div style="color:#666;cursor:default;">No match — we may still fit it; contact us.</div>';
+            gunResults.classList.add('show');
+            gunResults.querySelectorAll('div').forEach(function (d) {
+                if (d.textContent.indexOf('No match') === 0) return;
+                d.addEventListener('click', function () {
+                    state.gun = d.textContent;
+                    gunInput.value = d.textContent;
+                    gunChosen.textContent = '✓ Fitted for ' + d.textContent;
+                    gunChosen.classList.add('show');
+                    gunResults.classList.remove('show');
+                    document.getElementById('cartMsg').textContent = '';
+                });
+            });
+        }
+        gunInput.addEventListener('focus', function () { renderGuns(gunInput.value); });
+        gunInput.addEventListener('input', function () { state.gun = ''; gunChosen.classList.remove('show'); renderGuns(gunInput.value); });
+        document.addEventListener('click', function (e) { if (!e.target.closest('.gun-search')) gunResults.classList.remove('show'); });
+
+        document.getElementById('addCart').addEventListener('click', function () {
+            var msg = document.getElementById('cartMsg');
+            if (!state.gun) { msg.className = 'cart-msg err'; msg.textContent = 'Please pick your firearm first.'; gunInput.focus(); return; }
+            var total = recalc();
+            var addons = [];
+            document.querySelectorAll('.addon input').forEach(function (c) { if (c.checked) addons.push(c.parentNode.querySelector('.nm').textContent); });
+            var finishTxt = document.querySelector('#finishRow .opt-btn.active').childNodes[0].textContent.trim();
+            var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
+            var loopTxt = document.querySelector('#loopRow .opt-btn.active').textContent.trim();
+            var summary = finishTxt + ' · ' + handTxt + ' · ' + loopTxt + ' loop' + (addons.length ? ' · ' + addons.join(', ') : '') + (state.washer ? ' (' + state.washerColor + ')' : '');
+            // NOTE: when Snipcart is connected, add the configured item to the cart here.
+            msg.className = 'cart-msg ok';
+            msg.textContent = '✓ Configured: ' + state.gun + ' — ' + summary + ' = ' + money(total) + '. (Checkout activates once Snipcart is connected.)';
+        });
+
+        recalc();
+    </script>
+</body>
+</html>
