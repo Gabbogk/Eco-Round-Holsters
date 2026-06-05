@@ -133,22 +133,6 @@
                 </div>
             </div>
 
-            <!-- Add-ons -->
-            <div class="opt-group">
-                <div class="opt-label"><span>Add-ons</span></div>
-                <label class="addon"><input type="checkbox" data-price="5" id="washerCheck"><span class="nm">Colored Washers (set of 4)</span><span class="pr">+$5</span></label>
-                <div class="washer-color" id="washerColor">
-                    <div class="opt-row">
-                        <button class="opt-btn active" data-price="0">Red</button>
-                        <button class="opt-btn" data-price="0">Green</button>
-                        <button class="opt-btn" data-price="0">Blue</button>
-                        <button class="opt-btn" data-price="0">Purple</button>
-                        <button class="opt-btn" data-price="0">Copper</button>
-                        <button class="opt-btn" data-price="0">Gold</button>
-                    </div>
-                </div>
-            </div>
-
             <button class="add-cart" id="addCart">Add to Cart — <span id="btnPrice">$50.00</span></button>
             <div class="cart-msg" id="cartMsg"></div>
 
@@ -206,19 +190,6 @@
         });
         wireRow('handRow', function (btn) { state.hand = parseFloat(btn.dataset.price); });
         wireRow('attachRow', function (btn) { state.attach = parseFloat(btn.dataset.price); });
-        wireRow('washerColor', function (btn) { state.washerColor = btn.textContent.trim(); });
-
-        function recalcAddons() {
-            var sum = 0;
-            document.querySelectorAll('.addon input').forEach(function (c) { if (c.checked) sum += parseFloat(c.dataset.price); });
-            state.addons = sum;
-            recalc();
-        }
-        document.querySelectorAll('.addon input').forEach(function (c) { c.addEventListener('change', recalcAddons); });
-        document.getElementById('washerCheck').addEventListener('change', function () {
-            state.washer = this.checked;
-            document.getElementById('washerColor').classList.toggle('show', this.checked);
-        });
 
         var gunInput = document.getElementById('gunInput');
         var gunResults = document.getElementById('gunResults');
@@ -251,7 +222,7 @@
             var finishTxt = document.querySelector('#finishRow .opt-btn.active').childNodes[0].textContent.trim();
             var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
             var attachTxt = document.querySelector('#attachRow .opt-btn.active').textContent.trim();
-            var summary = finishTxt + ' · ' + handTxt + ' · ' + attachTxt + (state.washer ? ' · Washers (' + state.washerColor + ')' : '');
+            var summary = finishTxt + ' · ' + handTxt + ' · ' + attachTxt;
             // NOTE: when Snipcart is connected, add the configured item to the cart here.
             msg.className = 'cart-msg ok';
             msg.textContent = '✓ Configured: mag for ' + state.gun + ' — ' + summary + ' = ' + money(total) + '. (Checkout activates once Snipcart is connected.)';
