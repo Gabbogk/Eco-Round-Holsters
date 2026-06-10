@@ -1,17 +1,17 @@
 /* ============================================================================
- * analytics.js — Google Analytics 4 with Consent Mode v2 + a cookie banner.
+ * analytics.js - Google Analytics 4 with Consent Mode v2 + a cookie banner.
  *
  * Privacy-respecting by default: analytics cookies stay DENIED until the
  * visitor clicks "Accept" in the banner. Include on public pages only
  * (not admin). The whole thing is a no-op until you set GA_MEASUREMENT_ID.
  *
  * SET THIS: paste your GA4 Measurement ID below (looks like "G-XXXXXXXXXX").
- * It's a public value — it ships in the page source, so no secret handling.
+ * It's a public value - it ships in the page source, so no secret handling.
  * ==========================================================================*/
 (function () {
     'use strict';
 
-    var GA_MEASUREMENT_ID = ''; // e.g. 'G-ABCD1234EF' — leave empty to keep analytics OFF
+    var GA_MEASUREMENT_ID = ''; // e.g. 'G-ABCD1234EF' - leave empty to keep analytics OFF
 
     if (!GA_MEASUREMENT_ID) return; // not configured yet → no tracking, no banner
 

@@ -1,5 +1,5 @@
 /* ============================================================================
- * cart.js — client-side cart + slide-in drawer, shared by every page.
+ * cart.js - client-side cart + slide-in drawer, shared by every page.
  *
  * The cart only ever stores WHAT was chosen (product id + option keys + the
  * shopper-facing summary) and a display price. The price charged is recomputed
@@ -12,7 +12,7 @@
     'use strict';
 
     var KEY = 'ecoround_cart_v1';
-    // Mirror of catalog.js shipping rule — for DISPLAY only. Server decides the
+    // Mirror of catalog.js shipping rule - for DISPLAY only. Server decides the
     // real charge; these just power the drawer's "free shipping" nudge.
     var FREE_SHIP_AT = 10000; // cents
     var FLAT_SHIP = 695;
@@ -198,7 +198,7 @@
             checkoutBtn.disabled = false;
             checkoutBtn.textContent = 'Checkout';
         }).catch(function () {
-            errEl.textContent = 'Network error — please try again.';
+            errEl.textContent = 'Network error - please try again.';
             checkoutBtn.disabled = false;
             checkoutBtn.textContent = 'Checkout';
         });

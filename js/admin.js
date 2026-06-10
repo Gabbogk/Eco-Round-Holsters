@@ -54,7 +54,7 @@
             }
         }).catch(function () {
             if (isAuto) { sessionStorage.removeItem(KEY_STORE); }
-            else { loginError.textContent = 'Could not reach the server — confirm the Apps Script is deployed.'; }
+            else { loginError.textContent = 'Could not reach the server - confirm the Apps Script is deployed.'; }
         }).finally(function () {
             loginBtn.textContent = 'Log In'; loginBtn.disabled = false;
         });
@@ -86,13 +86,13 @@
         var week = state.signups.filter(function (s) { return s.date && new Date(s.date) >= weekAgo; }).length;
         document.getElementById('statWeek').textContent = week;
         var latest = state.signups.slice().sort(function (a, b) { return new Date(b.date) - new Date(a.date); })[0];
-        document.getElementById('statLatest').textContent = latest ? fmtDate(latest.date) : '—';
+        document.getElementById('statLatest').textContent = latest ? fmtDate(latest.date) : '-';
         document.getElementById('statLatestSub').textContent = latest ? latest.email : 'no signups yet';
     }
 
     function rowsHtml(list) {
         return list.map(function (s) {
-            return '<tr><td>' + esc(s.email) + '</td><td>' + fmtDateTime(s.date) + '</td><td>' + esc(s.source || '—') + '</td></tr>';
+            return '<tr><td>' + esc(s.email) + '</td><td>' + fmtDateTime(s.date) + '</td><td>' + esc(s.source || '-') + '</td></tr>';
         }).join('');
     }
 
@@ -197,21 +197,21 @@
         if (mode === 'unconfigured') {
             c.innerHTML = '<div class="panel"><div class="setup"><span class="badge-soon">Checkout not live yet</span>' + CART_SVG +
                 '<h3>Your orders will appear here</h3>' +
-                '<p>Add your <strong>Stripe key</strong> and every paid order shows up here automatically — customer, items, and total, pulled live from Stripe.</p>' +
+                '<p>Add your <strong>Stripe key</strong> and every paid order shows up here automatically - customer, items, and total, pulled live from Stripe.</p>' +
                 '<p class="hint">Until then, customers see an "email us to order" message at checkout.</p></div></div>';
             return;
         }
         if (mode === 'unauthorized') { c.innerHTML = '<div class="panel"><div class="setup"><h3>Session expired</h3><p>Please log out and back in.</p></div></div>'; return; }
         if (mode === 'error') { c.innerHTML = '<div class="panel"><div class="setup"><h3>Couldn’t load orders</h3><p>Stripe may be unreachable right now. Try Refresh.</p></div></div>'; return; }
         if (!state.orders.length) {
-            c.innerHTML = '<div class="panel"><div class="setup">' + CART_SVG + '<h3>No orders yet</h3><p>Checkout is live — paid orders will show up here as they come in.</p></div></div>';
+            c.innerHTML = '<div class="panel"><div class="setup">' + CART_SVG + '<h3>No orders yet</h3><p>Checkout is live - paid orders will show up here as they come in.</p></div></div>';
             return;
         }
         var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0); }, 0);
         var rows = state.orders.map(function (o) {
             var items = (o.items || []).map(function (it) { return '<span class="oi">' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</span>'; }).join('');
             return '<tr><td>' + fmtDateTime(o.created * 1000) + '</td>' +
-                '<td class="order-cust"><strong>' + (esc(o.name) || '—') + '</strong><small>' + esc(o.email) + '</small></td>' +
+                '<td class="order-cust"><strong>' + (esc(o.name) || '-') + '</strong><small>' + esc(o.email) + '</small></td>' +
                 '<td class="order-items">' + items + '</td>' +
                 '<td class="order-total">' + fmtMoney(o.amount_total) + '</td></tr>';
         }).join('');
@@ -227,7 +227,7 @@
         var revEl = document.getElementById('statRevenue'), revSub = document.getElementById('statRevenueSub');
         var ordEl = document.getElementById('statOrders'), ordSub = document.getElementById('statOrdersSub');
         if (!state.checkoutLive) {
-            revEl.textContent = '—'; ordEl.textContent = '—';
+            revEl.textContent = '-'; ordEl.textContent = '-';
             revSub.textContent = 'add Stripe key to enable';
             ordSub.textContent = 'awaiting checkout setup';
             return;

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoTwin Sidecar | EcoRound Holsters</title>
-    <meta name="description" content="The EcoTwin — IWB sidecar holster with an attached magazine carrier. Custom-molded Kydex for 400+ firearms, adjustable retention, handcrafted in the USA, lifetime warranty.">
+    <meta name="description" content="The EcoTwin - IWB sidecar holster with an attached magazine carrier. Custom-molded Kydex for 400+ firearms, adjustable retention, handcrafted in the USA, lifetime warranty.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -94,7 +94,7 @@
             <h1 class="pdp-title">EcoTwin Sidecar</h1>
             <div class="pdp-rating">&#9733;&#9733;&#9733;&#9733;&#9733; <span>Inside-the-Waistband &middot; Holster + Mag</span></div>
             <div class="pdp-price" id="price">$100.00</div>
-            <p class="pdp-desc">Carry your pistol and a spare magazine in one slim rig. The EcoTwin pairs a precision-molded Kydex holster with an attached magazine carrier, so your reload rides right alongside your firearm — balanced, concealable, and always exactly where you expect it. Independently adjustable retention on both, a smooth draw, and that signature audible click. Hand-built and individually inspected in the USA, backed by our lifetime warranty.</p>
+            <p class="pdp-desc">Carry your pistol and a spare magazine in one slim rig. The EcoTwin pairs a precision-molded Kydex holster with an attached magazine carrier, so your reload rides right alongside your firearm - balanced, concealable, and always exactly where you expect it. Independently adjustable retention on both, a smooth draw, and that signature audible click. Hand-built and individually inspected in the USA, backed by our lifetime warranty.</p>
 
             <!-- Finish -->
             <div class="opt-group">
@@ -103,8 +103,8 @@
                     <button class="opt-btn active" data-key="finish-plain" data-price="0">Plain Kydex</button>
                     <button class="opt-btn" data-key="finish-carbon" data-price="10">Carbon Fiber <span class="add">+$10</span></button>
                     <button class="opt-btn" data-key="finish-carbon-2sided" data-price="15">Double-Sided Carbon <span class="add">+$15</span></button>
-                    <button class="opt-btn" data-key="finish-graphic-kydex" data-price="15" data-graphic="1">Custom Graphic — Kydex <span class="add">+$15</span></button>
-                    <button class="opt-btn" data-key="finish-graphic-carbon" data-price="20" data-graphic="1">Custom Graphic — Carbon <span class="add">+$20</span></button>
+                    <button class="opt-btn" data-key="finish-graphic-kydex" data-price="15" data-graphic="1">Custom Graphic - Kydex <span class="add">+$15</span></button>
+                    <button class="opt-btn" data-key="finish-graphic-carbon" data-price="20" data-graphic="1">Custom Graphic - Carbon <span class="add">+$20</span></button>
                 </div>
                 <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
             </div>
@@ -154,7 +154,7 @@
                 <label class="addon"><input type="checkbox" data-key="addon-molding" data-price="10"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
             </div>
 
-            <button class="add-cart" id="addCart">Add to Cart — <span id="btnPrice">$100.00</span></button>
+            <button class="add-cart" id="addCart">Add to Cart - <span id="btnPrice">$100.00</span></button>
             <div class="cart-msg" id="cartMsg"></div>
 
             <ul class="pdp-features">
@@ -232,7 +232,7 @@
         function renderGuns(q) {
             q = q.toLowerCase();
             var matches = GUNS.filter(function (g) { return g.toLowerCase().indexOf(q) >= 0; }).slice(0, 30);
-            gunResults.innerHTML = matches.map(function (g) { return '<div>' + g + '</div>'; }).join('') || '<div style="color:#666;cursor:default;">No match — we may still fit it; contact us.</div>';
+            gunResults.innerHTML = matches.map(function (g) { return '<div>' + g + '</div>'; }).join('') || '<div style="color:#666;cursor:default;">No match - we may still fit it; contact us.</div>';
             gunResults.classList.add('show');
             gunResults.querySelectorAll('div').forEach(function (d) {
                 if (d.textContent.indexOf('No match') === 0) return;

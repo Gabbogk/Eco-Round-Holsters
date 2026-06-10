@@ -1,5 +1,5 @@
 // ============================================================================
-// catalog.js — SERVER-SIDE source of truth for pricing.
+// catalog.js - SERVER-SIDE source of truth for pricing.
 //
 // The browser product pages compute a price for display only. NEVER trust that
 // number: a shopper can edit the page and send any price they like. At checkout
@@ -10,12 +10,12 @@
 // Option keys here must match the `data-key` attributes on the product pages.
 // ============================================================================
 
-var FREE_SHIPPING_THRESHOLD = 10000; // $100.00 — orders at/above ship free
+var FREE_SHIPPING_THRESHOLD = 10000; // $100.00 - orders at/above ship free
 var SHIPPING_FLAT = 695;             // $6.95 flat under the threshold
 
 // Per product: base price + the priced add-on keys. Anything a shopper can pick
 // that costs nothing (hand, belt-loop size, attachment, washer color) is simply
-// absent here and contributes $0 — it still rides along in the line description.
+// absent here and contributes $0 - it still rides along in the line description.
 var PRODUCTS = {
     'ecotuck-iwb': {
         name: 'EcoTuck IWB',
@@ -100,7 +100,7 @@ function clampText(s, max) {
 
 // Price a single cart line authoritatively. Throws on an unknown product.
 // Unknown option keys contribute $0 (a tampered/extra key can never raise OR
-// lower our price below base — it just doesn't match a paid add-on).
+// lower our price below base - it just doesn't match a paid add-on).
 function priceItem(item) {
     if (!item || typeof item !== 'object') throw new Error('invalid item');
     var p = PRODUCTS[item.id];

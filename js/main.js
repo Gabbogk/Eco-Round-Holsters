@@ -80,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // No search backend yet — send shoppers to the full catalog to browse.
+    // No search backend yet - send shoppers to the full catalog to browse.
     const searchForm = searchModal.querySelector('.search-form');
     searchForm.addEventListener('submit', (e) => {
         e.preventDefault();

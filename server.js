@@ -21,13 +21,13 @@ const PORT = process.env.PORT || 3000;
             const val = line.slice(eq + 1).trim().replace(/^['"]|['"]$/g, '');
             if (key && !(key in process.env)) process.env[key] = val;
         });
-    } catch (e) { /* no .env file — fine */ }
+    } catch (e) { /* no .env file - fine */ }
 })();
 
 // The Apps Script web app (same one the Notify Me form posts to).
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyyaG9Q_G8m62eg5Hdxh-zem9kdA805aBLFN8g4kFkrSGzuy3nE98N9f3w/exec';
 
-// Stripe secret key comes from the environment — NEVER hardcode it. Until it's
+// Stripe secret key comes from the environment - NEVER hardcode it. Until it's
 // set, the checkout endpoint returns a friendly "not configured yet" response.
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
@@ -85,7 +85,7 @@ function fetchUrl(url, depth) {
     });
 }
 
-// ---- Stripe (raw HTTPS, no SDK — keeps the zero-dependency server) --------
+// ---- Stripe (raw HTTPS, no SDK - keeps the zero-dependency server) --------
 
 // Flatten a nested object/array into Stripe's bracketed form-encoding,
 // e.g. line_items[0][price_data][unit_amount]=5500
@@ -189,7 +189,7 @@ function handleCheckout(req, res) {
                         currency: 'usd',
                         unit_amount: l.unitAmount,
                         product_data: {
-                            name: l.name + (l.gun ? ' — ' + l.gun : ''),
+                            name: l.name + (l.gun ? ' - ' + l.gun : ''),
                             description: desc
                         }
                     }
