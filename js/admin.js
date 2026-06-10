@@ -247,6 +247,18 @@
         return parts.filter(Boolean).join('<br>');
     }
 
+    // Display-side merge for older orders whose config still has " | Washers: X"
+    // tacked on the end (new orders are already merged server-side).
+    function mergeWasher(text) {
+        var wm = text.match(/\s*\|\s*Washers:\s*([^|]+?)\s*$/i);
+        if (!wm) return text;
+        var color = wm[1].trim();
+        var body = text.slice(0, wm.index);
+        return body.indexOf('Colored Washers (set of 4)') >= 0
+            ? body.replace('Colored Washers (set of 4)', 'Colored Washers (set of 4): ' + color)
+            : body + ' · Washers: ' + color;
+    }
+
     function renderOrderDetail(o) {
         var sh = o.shipping || {};
         var addr = fmtAddr(sh);
@@ -258,7 +270,7 @@
         var build = (o.config && o.config.length)
             ? o.config.map(function (c) {
                 var m = c.match(/\s*\(Qty (\d+)\)\s*$/);
-                var text = m ? c.slice(0, m.index) : c;
+                var text = mergeWasher(m ? c.slice(0, m.index) : c);
                 var q = m ? m[1] : '1';
                 return '<li><span class="oi-qty">' + q + 'x</span> ' + esc(text) + '</li>';
             }).join('')

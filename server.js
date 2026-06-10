@@ -156,6 +156,16 @@ function verifyAdminKey(key) {
     }).catch(() => false);
 }
 
+// Fold the washer color into the "Colored Washers" line so it reads as one thing
+// (e.g. "Colored Washers (set of 4): Red") instead of being tacked on at the end.
+function mergeWasher(summary, color) {
+    if (!color) return summary;
+    if (summary.indexOf('Colored Washers (set of 4)') >= 0) {
+        return summary.replace('Colored Washers (set of 4)', 'Colored Washers (set of 4): ' + color);
+    }
+    return summary + ' · Washers: ' + color;
+}
+
 // POST /api/checkout  { items: [{ id, options:[keys], gun, washerColor, summary, qty }] }
 // -> { url } of a Stripe Checkout Session. Prices are recomputed server-side
 //    from catalog.js; the client's prices are never trusted.
@@ -179,8 +189,7 @@ function handleCheckout(req, res) {
         // 500 chars each) so the admin Orders view can show the full config.
         const meta = {};
         priced.lines.slice(0, 45).forEach((l, i) => {
-            let cfg = l.summary || 'Custom-configured';
-            if (l.washerColor) cfg += ' | Washers: ' + l.washerColor;
+            const cfg = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
             const line = l.name + (l.gun ? ' (' + l.gun + ')' : '') + ' | ' + cfg + (l.qty > 1 ? ' (Qty ' + l.qty + ')' : '');
             meta['item_' + i] = line.slice(0, 490);
         });
@@ -192,8 +201,7 @@ function handleCheckout(req, res) {
             phone_number_collection: { enabled: 'true' },
             shipping_address_collection: { allowed_countries: ['US'] },
             line_items: priced.lines.map((l) => {
-                let desc = l.summary || 'Custom-configured';
-                if (l.washerColor) desc += ' · Washers: ' + l.washerColor;
+                const desc = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
                 return {
                     quantity: l.qty,
                     price_data: {
