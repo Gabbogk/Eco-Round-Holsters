@@ -6,7 +6,7 @@
     var KEY_STORE = 'eco_admin_key';
     var TITLES = { overview: 'Overview', signups: 'Signups', analytics: 'Analytics', products: 'Products', orders: 'Orders', site: 'Site' };
 
-    var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '', orders: [], catalog: [], checkoutLive: false };
+    var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '', orders: [], catalog: [], checkoutLive: false, orderFilter: '' };
 
     // Friendly names for the priced option keys in catalog.js (for the Products view).
     var OPT_LABELS = {
@@ -208,19 +208,94 @@
             return;
         }
         var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0); }, 0);
-        var rows = state.orders.map(function (o) {
-            var items = (o.items || []).map(function (it) { return '<span class="oi">' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</span>'; }).join('');
-            return '<tr><td>' + fmtDateTime(o.created * 1000) + '</td>' +
-                '<td class="order-cust"><strong>' + (esc(o.name) || '-') + '</strong><small>' + esc(o.email) + '</small></td>' +
-                '<td class="order-items">' + items + '</td>' +
-                '<td class="order-total">' + fmtMoney(o.amount_total) + '</td></tr>';
-        }).join('');
         c.innerHTML = '<div class="panel">' +
             '<div class="summary-row"><div><div class="s-val">' + fmtMoney(revenue) + '</div><div class="s-lbl">Revenue</div></div>' +
             '<div><div class="s-val">' + state.orders.length + '</div><div class="s-lbl">Paid orders</div></div></div>' +
-            '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-            '<p class="panel-note" style="margin-top:14px;">Up to 25 most recent paid orders. Refunds, payouts and full details live in your <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--a-primary-hover)">Stripe Dashboard</a>.</p>' +
+            '<div class="toolbar"><input type="text" id="orderSearch" placeholder="Search orders by name, email, or item…"><button class="btn-ghost" id="ordersExport">⤓ Export CSV</button></div>' +
+            '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th></th></tr></thead><tbody id="ordersTbody"></tbody></table></div>' +
+            '<p class="panel-note" style="margin-top:14px;">Click a row for the shipping address + build sheet. Up to 25 most recent paid orders; full history in your <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--a-primary-hover)">Stripe Dashboard</a>.</p>' +
             '</div>';
+        renderOrderRows();
+        var srch = document.getElementById('orderSearch');
+        if (srch) { srch.value = state.orderFilter || ''; srch.addEventListener('input', function (e) { state.orderFilter = e.target.value; renderOrderRows(); }); }
+        var exp = document.getElementById('ordersExport');
+        if (exp) exp.addEventListener('click', ordersExportCsv);
+        var tbody = document.getElementById('ordersTbody');
+        if (tbody) tbody.addEventListener('click', function (e) {
+            var row = e.target.closest('.order-row');
+            if (!row) return;
+            var i = row.getAttribute('data-row');
+            var detail = tbody.querySelector('.order-detail-row[data-detail="' + i + '"]');
+            if (detail) { detail.hidden = !detail.hidden; row.classList.toggle('expanded', !detail.hidden); }
+        });
+    }
+
+    function orderMatches(o, f) {
+        if (!f) return true;
+        var hay = (o.name + ' ' + o.email + ' ' + (o.phone || '') + ' ' +
+            (o.items || []).map(function (i) { return i.description; }).join(' ') + ' ' +
+            (o.config || []).join(' ')).toLowerCase();
+        return hay.indexOf(f) >= 0;
+    }
+
+    function fmtAddr(sh) {
+        if (!sh || !sh.line1) return '';
+        var parts = [esc(sh.line1)];
+        if (sh.line2) parts.push(esc(sh.line2));
+        parts.push(esc([sh.city, sh.state, sh.postal_code].filter(Boolean).join(', ')));
+        if (sh.country && sh.country !== 'US') parts.push(esc(sh.country));
+        return parts.filter(Boolean).join('<br>');
+    }
+
+    function renderOrderDetail(o) {
+        var sh = o.shipping || {};
+        var addr = fmtAddr(sh);
+        var ship = '<div class="od-block"><div class="od-h">Ship to</div><div>' +
+            (addr ? esc(sh.name || o.name) + '<br>' + addr : '<span class="od-dim">No shipping address on file</span>') + '</div></div>';
+        var contact = '<div class="od-block"><div class="od-h">Contact</div><div>' +
+            (o.email ? '<a href="mailto:' + esc(o.email) + '">' + esc(o.email) + '</a>' : '-') +
+            (o.phone ? '<br>' + esc(o.phone) : '') + '</div></div>';
+        var build = (o.config && o.config.length)
+            ? o.config.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('')
+            : (o.items || []).map(function (it) { return '<li>' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</li>'; }).join('');
+        var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
+        var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
+        var ref = '<div class="od-ref">' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
+        return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' + customNote + ref;
+    }
+
+    function renderOrderRows() {
+        var tbody = document.getElementById('ordersTbody');
+        if (!tbody) return;
+        var f = (state.orderFilter || '').toLowerCase();
+        var html = state.orders.map(function (o, i) {
+            if (!orderMatches(o, f)) return '';
+            var items = (o.items || []).map(function (it) { return '<span class="oi">' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</span>'; }).join('');
+            var badge = o.custom ? ' <span class="order-badge">Custom graphic</span>' : '';
+            return '<tr class="order-row" data-row="' + i + '">' +
+                '<td>' + fmtDateTime(o.created * 1000) + '</td>' +
+                '<td class="order-cust"><strong>' + (esc(o.name) || '-') + '</strong><small>' + esc(o.email) + '</small></td>' +
+                '<td class="order-items">' + items + badge + '</td>' +
+                '<td class="order-total">' + fmtMoney(o.amount_total) + '</td>' +
+                '<td class="order-caret" aria-hidden="true">▾</td></tr>' +
+                '<tr class="order-detail-row" data-detail="' + i + '" hidden><td colspan="5">' + renderOrderDetail(o) + '</td></tr>';
+        }).join('');
+        tbody.innerHTML = html || '<tr class="empty-row"><td colspan="5">No matching orders.</td></tr>';
+    }
+
+    function ordersExportCsv() {
+        var cols = ['Date', 'Name', 'Email', 'Phone', 'Address', 'Items', 'Total', 'Custom', 'Order ID'];
+        var rows = [cols].concat(state.orders.map(function (o) {
+            var sh = o.shipping || {};
+            var addr = [sh.line1, sh.line2, sh.city, sh.state, sh.postal_code, sh.country].filter(Boolean).join(', ');
+            var items = (o.config && o.config.length ? o.config : (o.items || []).map(function (it) { return (it.qty > 1 ? it.qty + 'x ' : '') + it.description; })).join(' || ');
+            return [fmtDateTime(o.created * 1000), o.name, o.email, o.phone, addr, items, (o.amount_total / 100).toFixed(2), o.custom ? 'yes' : '', o.id];
+        }));
+        var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob); a.download = 'ecoround-orders.csv';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
     }
 
     function renderOrderStats() {

@@ -174,6 +174,17 @@ function handleCheckout(req, res) {
         catch (e) { return sendJson(res, 400, { error: 'invalid_cart', message: String(e.message || e) }); }
 
         const origin = originOf(req);
+
+        // Stash a per-line "what to build" summary in metadata (max 50 keys /
+        // 500 chars each) so the admin Orders view can show the full config.
+        const meta = {};
+        priced.lines.slice(0, 45).forEach((l, i) => {
+            let cfg = l.summary || 'Custom-configured';
+            if (l.washerColor) cfg += ' | Washers: ' + l.washerColor;
+            const line = l.name + (l.gun ? ' (' + l.gun + ')' : '') + ' | ' + cfg + (l.qty > 1 ? ' x' + l.qty : '');
+            meta['item_' + i] = line.slice(0, 490);
+        });
+
         const params = {
             mode: 'payment',
             success_url: origin + '/success.html?session_id={CHECKOUT_SESSION_ID}',
@@ -201,7 +212,8 @@ function handleCheckout(req, res) {
                     display_name: priced.shipping === 0 ? 'Free shipping' : 'Standard shipping',
                     fixed_amount: { amount: priced.shipping, currency: 'usd' }
                 }
-            }]
+            }],
+            metadata: meta
         };
 
         stripePost(STRIPE_SESSIONS_URL, params).then((r) => {
@@ -276,17 +288,37 @@ function handleOrders(req, res) {
                 }
                 const orders = (r.json.data || [])
                     .filter((s) => s.payment_status === 'paid')
-                    .map((s) => ({
-                        id: s.id,
-                        created: s.created,
-                        amount_total: s.amount_total,
-                        currency: s.currency,
-                        name: (s.customer_details && s.customer_details.name) || '',
-                        email: (s.customer_details && s.customer_details.email) || '',
-                        items: ((s.line_items && s.line_items.data) || []).map((li) => ({
+                    .map((s) => {
+                        const cd = s.customer_details || {};
+                        const sd = s.shipping_details || s.shipping || (s.collected_information && s.collected_information.shipping_details) || null;
+                        const addr = (sd && sd.address) || cd.address || {};
+                        const meta = s.metadata || {};
+                        const config = [];
+                        for (let i = 0; i < 50; i++) { if (meta['item_' + i]) config.push(meta['item_' + i]); else break; }
+                        const items = ((s.line_items && s.line_items.data) || []).map((li) => ({
                             description: li.description, qty: li.quantity, amount: li.amount_total
-                        }))
-                    }));
+                        }));
+                        const custom = config.some((c) => /custom graphic/i.test(c)) ||
+                            items.some((it) => /custom graphic/i.test(it.description || ''));
+                        return {
+                            id: s.id,
+                            created: s.created,
+                            amount_total: s.amount_total,
+                            currency: s.currency,
+                            name: cd.name || (sd && sd.name) || '',
+                            email: cd.email || '',
+                            phone: cd.phone || '',
+                            shipping: {
+                                name: (sd && sd.name) || cd.name || '',
+                                line1: addr.line1 || '', line2: addr.line2 || '',
+                                city: addr.city || '', state: addr.state || '',
+                                postal_code: addr.postal_code || '', country: addr.country || ''
+                            },
+                            items: items,
+                            config: config,
+                            custom: custom
+                        };
+                    });
                 sendJson(res, 200, { ok: true, orders: orders });
             });
         }).catch(() => sendJson(res, 502, { error: 'upstream_error' }));
