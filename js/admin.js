@@ -6,7 +6,15 @@
     var KEY_STORE = 'eco_admin_key';
     var TITLES = { overview: 'Overview', signups: 'Signups', analytics: 'Analytics', products: 'Products', orders: 'Orders', site: 'Site' };
 
-    var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '' };
+    var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '', orders: [], catalog: [], checkoutLive: false };
+
+    // Friendly names for the priced option keys in catalog.js (for the Products view).
+    var OPT_LABELS = {
+        'finish-carbon': 'Carbon Fiber', 'finish-carbon-2sided': 'Double-Sided Carbon',
+        'finish-graphic-kydex': 'Custom Graphic (Kydex)', 'finish-graphic-carbon': 'Custom Graphic (Carbon)',
+        'clip-monoblock': 'Monoblock clip', 'clip-ulti': 'Ulti-Clip', 'clip-metal': 'Metal clip',
+        'addon-claw': 'Concealment claw', 'addon-washers': 'Colored washers', 'addon-molding': 'Light/laser molding'
+    };
 
     var login = document.getElementById('login');
     var app = document.getElementById('app');
@@ -38,6 +46,8 @@
                 login.style.display = 'none';
                 app.classList.add('active');
                 renderAll();
+                loadCatalog();
+                loadOrders(key);
             } else {
                 if (isAuto) { sessionStorage.removeItem(KEY_STORE); }
                 else { loginError.textContent = 'Incorrect password. Try again.'; }
@@ -56,12 +66,15 @@
         var key = sessionStorage.getItem(KEY_STORE);
         if (!key) return;
         fetchData(key).then(function (data) { if (data && data.ok) { state.signups = data.signups || []; renderAll(); } });
+        loadCatalog();
+        loadOrders(key);
     }
 
     // ---- formatting ----
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
     function fmtDate(iso) { if (!iso) return ''; var d = new Date(iso); return isNaN(d) ? iso : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); }
     function fmtDateTime(iso) { if (!iso) return ''; var d = new Date(iso); return isNaN(d) ? iso : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }); }
+    function fmtMoney(cents) { return '$' + (Math.round(cents || 0) / 100).toFixed(2); }
 
     // ---- rendering ----
     function renderAll() { renderStats(); renderRecent(); renderSignups(); renderChart(); }
@@ -134,6 +147,101 @@
         a.download = 'ecoround-signups.csv';
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
+    }
+
+    // ---- products (read-only catalog from /api/catalog) ----
+    function loadCatalog() {
+        fetch('/api/catalog').then(function (r) { return r.json(); }).then(function (d) {
+            if (d && d.ok) { state.catalog = d.products || []; renderProducts(); }
+        }).catch(function () {});
+    }
+    function renderProducts() {
+        var body = document.getElementById('productsBody');
+        var cnt = document.getElementById('productsCount');
+        if (!state.catalog.length) { body.innerHTML = '<tr class="empty-row"><td colspan="3">No products found.</td></tr>'; return; }
+        if (cnt) cnt.textContent = state.catalog.length + ' products';
+        body.innerHTML = state.catalog.map(function (p) {
+            var chips = p.addOns.length
+                ? p.addOns.map(function (a) { return '<span class="opt-chip">' + esc(OPT_LABELS[a.key] || a.key) + ' <b>+' + fmtMoney(a.price) + '</b></span>'; }).join('')
+                : '<span style="color:var(--a-dim)">No paid add-ons</span>';
+            return '<tr><td><strong>' + esc(p.name) + '</strong></td><td>' + fmtMoney(p.base) + '</td><td><div class="opt-chips">' + chips + '</div></td></tr>';
+        }).join('');
+    }
+
+    // ---- orders (live from Stripe via /api/orders) ----
+    function loadOrders(key) {
+        fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: key }) })
+            .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+            .then(function (res) {
+                if (res.status === 200 && res.j && res.j.ok) {
+                    state.orders = res.j.orders || []; state.checkoutLive = true;
+                    renderOrders('ok'); setPaymentsStatus('live');
+                } else if (res.status === 503) {
+                    state.orders = []; state.checkoutLive = false;
+                    renderOrders('unconfigured'); setPaymentsStatus('pending');
+                } else if (res.status === 401) {
+                    renderOrders('unauthorized'); setPaymentsStatus('pending');
+                } else {
+                    renderOrders('error'); setPaymentsStatus('pending');
+                }
+                renderOrderStats();
+            })
+            .catch(function () { renderOrders('error'); renderOrderStats(); });
+    }
+
+    var CART_SVG = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+
+    function renderOrders(mode) {
+        var c = document.getElementById('ordersContent');
+        if (!c) return;
+        if (mode === 'unconfigured') {
+            c.innerHTML = '<div class="panel"><div class="setup"><span class="badge-soon">Checkout not live yet</span>' + CART_SVG +
+                '<h3>Your orders will appear here</h3>' +
+                '<p>Add your <strong>Stripe key</strong> and every paid order shows up here automatically — customer, items, and total, pulled live from Stripe.</p>' +
+                '<p class="hint">Until then, customers see an "email us to order" message at checkout.</p></div></div>';
+            return;
+        }
+        if (mode === 'unauthorized') { c.innerHTML = '<div class="panel"><div class="setup"><h3>Session expired</h3><p>Please log out and back in.</p></div></div>'; return; }
+        if (mode === 'error') { c.innerHTML = '<div class="panel"><div class="setup"><h3>Couldn’t load orders</h3><p>Stripe may be unreachable right now. Try Refresh.</p></div></div>'; return; }
+        if (!state.orders.length) {
+            c.innerHTML = '<div class="panel"><div class="setup">' + CART_SVG + '<h3>No orders yet</h3><p>Checkout is live — paid orders will show up here as they come in.</p></div></div>';
+            return;
+        }
+        var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0); }, 0);
+        var rows = state.orders.map(function (o) {
+            var items = (o.items || []).map(function (it) { return '<span class="oi">' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</span>'; }).join('');
+            return '<tr><td>' + fmtDateTime(o.created * 1000) + '</td>' +
+                '<td class="order-cust"><strong>' + (esc(o.name) || '—') + '</strong><small>' + esc(o.email) + '</small></td>' +
+                '<td class="order-items">' + items + '</td>' +
+                '<td class="order-total">' + fmtMoney(o.amount_total) + '</td></tr>';
+        }).join('');
+        c.innerHTML = '<div class="panel">' +
+            '<div class="summary-row"><div><div class="s-val">' + fmtMoney(revenue) + '</div><div class="s-lbl">Revenue</div></div>' +
+            '<div><div class="s-val">' + state.orders.length + '</div><div class="s-lbl">Paid orders</div></div></div>' +
+            '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+            '<p class="panel-note" style="margin-top:14px;">Up to 25 most recent paid orders. Refunds, payouts and full details live in your <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--a-primary-hover)">Stripe Dashboard</a>.</p>' +
+            '</div>';
+    }
+
+    function renderOrderStats() {
+        var revEl = document.getElementById('statRevenue'), revSub = document.getElementById('statRevenueSub');
+        var ordEl = document.getElementById('statOrders'), ordSub = document.getElementById('statOrdersSub');
+        if (!state.checkoutLive) {
+            revEl.textContent = '—'; ordEl.textContent = '—';
+            revSub.textContent = 'add Stripe key to enable';
+            ordSub.textContent = 'awaiting checkout setup';
+            return;
+        }
+        var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0); }, 0);
+        revEl.textContent = fmtMoney(revenue); revSub.textContent = 'paid orders (Stripe)';
+        ordEl.textContent = state.orders.length; ordSub.textContent = 'paid to date';
+    }
+
+    function setPaymentsStatus(mode) {
+        var el = document.getElementById('statusPayments');
+        if (!el) return;
+        if (mode === 'live') { el.textContent = 'Live'; el.className = 'status-pill live'; }
+        else { el.textContent = 'Pending key'; el.className = 'status-pill pending'; }
     }
 
     // ---- nav / controls ----

@@ -331,3 +331,25 @@ tbody tr:hover { background: var(--a-card-hover); }
     .menu-toggle { display: block; }
     .view, .topbar { padding-left: 18px; padding-right: 18px; }
 }
+
+/* ===== Products + Orders views ===== */
+.panel-note { color: var(--a-muted); font-size: 0.85rem; margin-bottom: 14px; }
+.panel-note code { background: #121212; padding: 1px 6px; border-radius: 4px; color: var(--a-accent); font-size: 0.82rem; }
+.muted-count { font-size: 0.8rem; color: var(--a-dim); font-weight: 400; letter-spacing: 0; text-transform: none; }
+
+.status-pill.pending { background: rgba(200, 169, 110, 0.18); color: var(--a-accent); }
+.status-pill.off { background: rgba(192, 57, 43, 0.15); color: #e07a6b; }
+
+.opt-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.opt-chip { font-size: 0.75rem; background: #121212; border: 1px solid var(--a-border); border-radius: 4px; padding: 2px 8px; color: var(--a-muted); white-space: nowrap; }
+.opt-chip b { color: var(--a-accent); font-weight: 600; }
+
+.order-items { color: var(--a-muted); font-size: 0.82rem; line-height: 1.5; }
+.order-items .oi { display: block; }
+.order-cust strong { display: block; font-size: 0.9rem; }
+.order-cust small { color: var(--a-dim); font-size: 0.78rem; }
+.order-total { font-family: var(--font-heading); font-weight: 600; color: var(--a-primary-hover); white-space: nowrap; }
+
+.summary-row { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 18px; }
+.summary-row .s-val { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--a-primary-hover); line-height: 1.1; }
+.summary-row .s-lbl { font-size: 0.72rem; color: var(--a-muted); text-transform: uppercase; letter-spacing: 1px; }

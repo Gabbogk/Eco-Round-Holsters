@@ -129,6 +129,33 @@ function stripePost(url, paramsObj) {
     });
 }
 
+function stripeGet(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, { headers: { 'Authorization': 'Bearer ' + STRIPE_SECRET_KEY } }, (resp) => {
+            let data = '';
+            resp.on('data', (c) => { data += c; });
+            resp.on('end', () => {
+                let json;
+                try { json = JSON.parse(data); } catch (e) { json = {}; }
+                resolve({ status: resp.statusCode, json: json });
+            });
+        }).on('error', reject);
+    });
+}
+
+// Validate an admin password the same way the dashboard login does: ask the
+// Apps Script web app (it returns { ok: true } for the right key). Resolves true/false.
+function verifyAdminKey(key) {
+    if (!key) return Promise.resolve(false);
+    const url = APPS_SCRIPT_URL + '?key=' + encodeURIComponent(key) + '&callback=cb';
+    return fetchUrl(url).then((text) => {
+        const start = text.indexOf('('), end = text.lastIndexOf(')');
+        const json = (start >= 0 && end > start) ? text.slice(start + 1, end) : text;
+        let parsed; try { parsed = JSON.parse(json); } catch (e) { parsed = {}; }
+        return !!(parsed && parsed.ok);
+    }).catch(() => false);
+}
+
 // POST /api/checkout  { items: [{ id, options:[keys], gun, washerColor, summary, qty }] }
 // -> { url } of a Stripe Checkout Session. Prices are recomputed server-side
 //    from catalog.js; the client's prices are never trusted.
@@ -214,6 +241,58 @@ function handleOrder(req, res) {
         }).on('error', () => sendJson(res, 502, { error: 'stripe_unreachable' }));
 }
 
+// GET /api/catalog -> the product/price list (public; same prices shown on the
+// product pages). Powers the admin Products view.
+function handleCatalog(req, res) {
+    const products = Object.keys(catalog.PRODUCTS).map((id) => {
+        const p = catalog.PRODUCTS[id];
+        return {
+            id: id,
+            name: p.name,
+            base: p.base,
+            addOns: Object.keys(p.addOns).map((k) => ({ key: k, price: p.addOns[k] }))
+        };
+    });
+    sendJson(res, 200, { ok: true, products: products, freeShippingThreshold: catalog.FREE_SHIPPING_THRESHOLD, flatShipping: catalog.SHIPPING_FLAT });
+}
+
+// POST /api/orders { key } -> recent PAID Stripe orders, for the admin dashboard.
+// Auth: the admin password (validated via Apps Script, same as login). Returns
+// 503 until the Stripe key is set, so the dashboard can show a setup state.
+function handleOrders(req, res) {
+    if (!STRIPE_SECRET_KEY) {
+        return sendJson(res, 503, { error: 'stripe_unconfigured', message: 'Add your Stripe key to see orders here.' });
+    }
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { error: 'bad_request' });
+        const key = (data && data.key) || '';
+        verifyAdminKey(key).then((okAuth) => {
+            if (!okAuth) return sendJson(res, 401, { error: 'unauthorized' });
+            const url = 'https://api.stripe.com/v1/checkout/sessions?limit=25&expand[]=data.line_items';
+            return stripeGet(url).then((r) => {
+                if (r.status >= 300) {
+                    const msg = (r.json && r.json.error && r.json.error.message) || 'stripe_error';
+                    return sendJson(res, 502, { error: 'stripe_error', message: msg });
+                }
+                const orders = (r.json.data || [])
+                    .filter((s) => s.payment_status === 'paid')
+                    .map((s) => ({
+                        id: s.id,
+                        created: s.created,
+                        amount_total: s.amount_total,
+                        currency: s.currency,
+                        name: (s.customer_details && s.customer_details.name) || '',
+                        email: (s.customer_details && s.customer_details.email) || '',
+                        items: ((s.line_items && s.line_items.data) || []).map((li) => ({
+                            description: li.description, qty: li.quantity, amount: li.amount_total
+                        }))
+                    }));
+                sendJson(res, 200, { ok: true, orders: orders });
+            });
+        }).catch(() => sendJson(res, 502, { error: 'upstream_error' }));
+    });
+}
+
 // Admin data proxy: POST /api/signups { key } -> returns the Apps Script JSON.
 // Same-origin, so no CORS and nothing for ad-blockers to block.
 function handleSignupsApi(req, res) {
@@ -243,6 +322,8 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && urlPath === '/api/signups') return handleSignupsApi(req, res);
     if (req.method === 'POST' && urlPath === '/api/checkout') return handleCheckout(req, res);
     if (req.method === 'GET' && urlPath === '/api/order') return handleOrder(req, res);
+    if (req.method === 'GET' && urlPath === '/api/catalog') return handleCatalog(req, res);
+    if (req.method === 'POST' && urlPath === '/api/orders') return handleOrders(req, res);
 
     let filePath = path.join(__dirname, urlPath === '/' ? '/index.html' : urlPath);
     const ext = path.extname(filePath);
