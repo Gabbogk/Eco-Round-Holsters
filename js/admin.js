@@ -256,7 +256,11 @@
             (o.email ? '<a href="mailto:' + esc(o.email) + '">' + esc(o.email) + '</a>' : '-') +
             (o.phone ? '<br>' + esc(o.phone) : '') + '</div></div>';
         var build = (o.config && o.config.length)
-            ? o.config.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('')
+            ? o.config.map(function (c) {
+                var m = c.match(/\s*\(Qty (\d+)\)\s*$/);
+                var text = m ? c.slice(0, m.index) : c;
+                return '<li>' + (m ? '<span class="oi-qty">Qty ' + m[1] + '</span> ' : '') + esc(text) + '</li>';
+            }).join('')
             : (o.items || []).map(function (it) { return '<li>' + (it.qty > 1 ? '<span class="oi-qty">Qty ' + it.qty + '</span> ' : '') + esc(it.description) + '</li>'; }).join('');
         var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
         var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
