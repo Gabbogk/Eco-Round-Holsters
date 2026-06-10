@@ -257,7 +257,7 @@
             (o.phone ? '<br>' + esc(o.phone) : '') + '</div></div>';
         var build = (o.config && o.config.length)
             ? o.config.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('')
-            : (o.items || []).map(function (it) { return '<li>' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</li>'; }).join('');
+            : (o.items || []).map(function (it) { return '<li>' + (it.qty > 1 ? '<span class="oi-qty">Qty ' + it.qty + '</span> ' : '') + esc(it.description) + '</li>'; }).join('');
         var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
         var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
         var ref = '<div class="od-ref">' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
@@ -270,7 +270,7 @@
         var f = (state.orderFilter || '').toLowerCase();
         var html = state.orders.map(function (o, i) {
             if (!orderMatches(o, f)) return '';
-            var items = (o.items || []).map(function (it) { return '<span class="oi">' + (it.qty > 1 ? it.qty + '× ' : '') + esc(it.description) + '</span>'; }).join('');
+            var items = (o.items || []).map(function (it) { return '<span class="oi">' + (it.qty > 1 ? '<span class="oi-qty">Qty ' + it.qty + '</span> ' : '') + esc(it.description) + '</span>'; }).join('');
             var badge = o.custom ? ' <span class="order-badge">Custom graphic</span>' : '';
             return '<tr class="order-row" data-row="' + i + '">' +
                 '<td>' + fmtDateTime(o.created * 1000) + '</td>' +
@@ -288,7 +288,7 @@
         var rows = [cols].concat(state.orders.map(function (o) {
             var sh = o.shipping || {};
             var addr = [sh.line1, sh.line2, sh.city, sh.state, sh.postal_code, sh.country].filter(Boolean).join(', ');
-            var items = (o.config && o.config.length ? o.config : (o.items || []).map(function (it) { return (it.qty > 1 ? it.qty + 'x ' : '') + it.description; })).join(' || ');
+            var items = (o.config && o.config.length ? o.config : (o.items || []).map(function (it) { return (it.qty > 1 ? 'Qty ' + it.qty + ' - ' : '') + it.description; })).join(' || ');
             return [fmtDateTime(o.created * 1000), o.name, o.email, o.phone, addr, items, (o.amount_total / 100).toFixed(2), o.custom ? 'yes' : '', o.id];
         }));
         var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');

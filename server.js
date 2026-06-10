@@ -181,7 +181,7 @@ function handleCheckout(req, res) {
         priced.lines.slice(0, 45).forEach((l, i) => {
             let cfg = l.summary || 'Custom-configured';
             if (l.washerColor) cfg += ' | Washers: ' + l.washerColor;
-            const line = l.name + (l.gun ? ' (' + l.gun + ')' : '') + ' | ' + cfg + (l.qty > 1 ? ' x' + l.qty : '');
+            const line = l.name + (l.gun ? ' (' + l.gun + ')' : '') + ' | ' + cfg + (l.qty > 1 ? ' (Qty ' + l.qty + ')' : '');
             meta['item_' + i] = line.slice(0, 490);
         });
 
