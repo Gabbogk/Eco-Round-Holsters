@@ -19,6 +19,8 @@
         .res-detail { color: var(--color-primary-hover); font-size: .95rem; margin-bottom: 14px; min-height: 20px; }
         .res-note { max-width: 520px; color: var(--color-text-dim); font-size: .86rem; line-height: 1.7; margin: 0 auto 32px; }
         .res-note a { color: var(--color-primary-hover); }
+        .res-orderno { display: inline-block; font-family: var(--font-heading); letter-spacing: 2px; font-size: 1.05rem; color: var(--color-text-muted); border: 1px solid var(--color-primary); border-radius: 8px; padding: 8px 18px; margin: 0 auto 18px; }
+        .res-orderno b { color: var(--color-primary-hover); font-weight: 700; }
         .res-ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
     </style>
 </head>
@@ -34,6 +36,7 @@
         </div>
         <h1>ORDER CONFIRMED</h1>
         <p class="res-lead">Thank you - your payment went through and your holster order is in. Each piece is hand-built and individually inspected before it ships.</p>
+        <p class="res-orderno" id="orderNo" hidden></p>
         <p class="res-detail" id="orderDetail"></p>
         <p class="res-note">A receipt is on its way to your email. <strong>Ordered a custom graphic?</strong> Reply to that receipt or email <a href="mailto:info@ecoroundholsters.com">info@ecoroundholsters.com</a> with your design so we can get started.</p>
 
@@ -57,6 +60,11 @@
                 .then(function (r) { return r.ok ? r.json() : null; })
                 .then(function (o) {
                     if (!o) return;
+                    if (o.order_no) {
+                        var on = document.getElementById('orderNo');
+                        on.innerHTML = 'Order <b>' + o.order_no + '</b>';
+                        on.hidden = false;
+                    }
                     var bits = [];
                     if (typeof o.amount_total === 'number') bits.push('Total charged: $' + (o.amount_total / 100).toFixed(2));
                     if (o.email) bits.push('confirmation sent to ' + o.email);

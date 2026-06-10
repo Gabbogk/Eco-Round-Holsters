@@ -2,6 +2,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const catalog = require('./catalog');
 
 const PORT = process.env.PORT || 3000;
@@ -166,6 +167,42 @@ function mergeWasher(summary, color) {
     return summary + ' · Washers: ' + color;
 }
 
+// Deterministic, human-friendly EcoRound order number derived purely from the
+// Stripe session id. Same id -> same code, so the success page and the admin
+// dashboard always agree without storing anything (this server has no database;
+// the Stripe session id is the permanent unique handle). Crockford-style base32
+// (no I/L/O/U) keeps it unambiguous when typed or read over the phone.
+const ORDER_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+function orderNumber(id) {
+    if (!id) return '';
+    // Two FNV-1a streams (different seeds) give ~35 bits of spread, encoded as
+    // exactly 7 Crockford base32 chars. Collisions stay negligible into the tens
+    // of thousands of orders, and the Stripe id remains the true unique key.
+    let h1 = 0x811c9dc5, h2 = 0xc2b2ae35;
+    for (let i = 0; i < id.length; i++) {
+        const c = id.charCodeAt(i);
+        h1 = (h1 ^ c) >>> 0; h1 = (h1 + ((h1 << 1) + (h1 << 4) + (h1 << 7) + (h1 << 8) + (h1 << 24))) >>> 0;
+        h2 = (h2 ^ c) >>> 0; h2 = (h2 + ((h2 << 1) + (h2 << 4) + (h2 << 7) + (h2 << 8) + (h2 << 24))) >>> 0;
+    }
+    let n = (h1 >>> 0) * 8 + (h2 & 7); // 0 .. 2^35-1
+    let out = '';
+    for (let k = 0; k < 7; k++) { out = ORDER_ALPHABET[n % 32] + out; n = Math.floor(n / 32); }
+    return 'ECO-' + out;
+}
+
+// A fresh random EcoRound order number, generated at checkout and stored on the
+// Stripe session + payment so it shows on the customer's receipt and in your
+// Stripe dashboard. Same 7-char ECO- format as the id-derived fallback above.
+function newOrderNumber() {
+    const b = crypto.randomBytes(5); // 40 random bits
+    let n = 0;
+    for (let i = 0; i < 5; i++) n = n * 256 + b[i];
+    n = Math.floor(n / 32); // keep 35 bits -> exactly 7 base32 chars
+    let out = '';
+    for (let k = 0; k < 7; k++) { out = ORDER_ALPHABET[n % 32] + out; n = Math.floor(n / 32); }
+    return 'ECO-' + out;
+}
+
 // POST /api/checkout  { items: [{ id, options:[keys], gun, washerColor, summary, qty }] }
 // -> { url } of a Stripe Checkout Session. Prices are recomputed server-side
 //    from catalog.js; the client's prices are never trusted.
@@ -187,7 +224,8 @@ function handleCheckout(req, res) {
 
         // Stash a per-line "what to build" summary in metadata (max 50 keys /
         // 500 chars each) so the admin Orders view can show the full config.
-        const meta = {};
+        const orderNo = newOrderNumber();
+        const meta = { order_no: orderNo };
         priced.lines.slice(0, 45).forEach((l, i) => {
             const cfg = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
             const line = l.name + (l.gun ? ' (' + l.gun + ')' : '') + ' | ' + cfg + (l.qty > 1 ? ' (Qty ' + l.qty + ')' : '');
@@ -198,6 +236,7 @@ function handleCheckout(req, res) {
             mode: 'payment',
             success_url: origin + '/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url: origin + '/cancel.html',
+            payment_intent_data: { description: 'EcoRound order ' + orderNo, metadata: { order_no: orderNo } },
             phone_number_collection: { enabled: 'true' },
             shipping_address_collection: { allowed_countries: ['US'] },
             line_items: priced.lines.map((l) => {
@@ -252,7 +291,9 @@ function handleOrder(req, res) {
             resp.on('end', () => {
                 let j; try { j = JSON.parse(data); } catch (e) { j = {}; }
                 if (resp.statusCode >= 300) return sendJson(res, 502, { error: 'stripe_error' });
+                const ometa = j.metadata || {};
                 sendJson(res, 200, {
+                    order_no: ometa.order_no || orderNumber(id),
                     email: (j.customer_details && j.customer_details.email) || j.customer_email || '',
                     amount_total: j.amount_total,
                     payment_status: j.payment_status
@@ -310,6 +351,7 @@ function handleOrders(req, res) {
                             items.some((it) => /custom graphic/i.test(it.description || ''));
                         return {
                             id: s.id,
+                            orderNo: meta.order_no || orderNumber(s.id),
                             created: s.created,
                             amount_total: s.amount_total,
                             currency: s.currency,

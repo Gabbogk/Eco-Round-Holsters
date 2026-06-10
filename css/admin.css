@@ -350,6 +350,7 @@ tbody tr:hover { background: var(--a-card-hover); }
 .order-cust strong { display: block; font-size: 0.9rem; }
 .order-cust small { color: var(--a-dim); font-size: 0.78rem; }
 .order-total { font-family: var(--font-heading); font-weight: 600; color: var(--a-primary-hover); white-space: nowrap; }
+.order-no { font-family: var(--font-heading); font-weight: 600; font-size: 0.82rem; letter-spacing: 0.5px; color: var(--a-primary-hover); white-space: nowrap; }
 
 .summary-row { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 18px; }
 .summary-row .s-val { font-family: var(--font-heading); font-size: 1.5rem; font-weight: 700; color: var(--a-primary-hover); line-height: 1.1; }
@@ -373,3 +374,4 @@ tbody tr:hover { background: var(--a-card-hover); }
 .od-custom { margin: 0 16px 14px; padding: 10px 12px; background: rgba(200, 169, 110, 0.1); border: 1px solid rgba(200, 169, 110, 0.3); border-radius: 8px; color: var(--a-accent); font-size: 0.82rem; }
 .od-ref { padding: 0 16px 16px; font-size: 0.74rem; color: var(--a-dim); word-break: break-all; }
 .od-ref a { color: var(--a-primary-hover); }
+.od-ordno { font-family: var(--font-heading); font-weight: 600; letter-spacing: 0.5px; color: var(--a-primary-hover); }

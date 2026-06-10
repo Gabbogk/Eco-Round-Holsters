@@ -211,8 +211,8 @@
         c.innerHTML = '<div class="panel">' +
             '<div class="summary-row"><div><div class="s-val">' + fmtMoney(revenue) + '</div><div class="s-lbl">Revenue</div></div>' +
             '<div><div class="s-val">' + state.orders.length + '</div><div class="s-lbl">Paid orders</div></div></div>' +
-            '<div class="toolbar"><input type="text" id="orderSearch" placeholder="Search orders by name, email, or item…"><button class="btn-ghost" id="ordersExport">⤓ Export CSV</button></div>' +
-            '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th></th></tr></thead><tbody id="ordersTbody"></tbody></table></div>' +
+            '<div class="toolbar"><input type="text" id="orderSearch" placeholder="Search by order #, name, email, or item…"><button class="btn-ghost" id="ordersExport">⤓ Export CSV</button></div>' +
+            '<div class="table-wrap"><table><thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th></th></tr></thead><tbody id="ordersTbody"></tbody></table></div>' +
             '<p class="panel-note" style="margin-top:14px;">Click a row for the shipping address + build sheet. Up to 25 most recent paid orders; full history in your <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--a-primary-hover)">Stripe Dashboard</a>.</p>' +
             '</div>';
         renderOrderRows();
@@ -232,7 +232,7 @@
 
     function orderMatches(o, f) {
         if (!f) return true;
-        var hay = (o.name + ' ' + o.email + ' ' + (o.phone || '') + ' ' +
+        var hay = ((o.orderNo || '') + ' ' + o.name + ' ' + o.email + ' ' + (o.phone || '') + ' ' +
             (o.items || []).map(function (i) { return i.description; }).join(' ') + ' ' +
             (o.config || []).join(' ')).toLowerCase();
         return hay.indexOf(f) >= 0;
@@ -277,7 +277,7 @@
             : (o.items || []).map(function (it) { return '<li>' + '<span class="oi-qty">' + (it.qty || 1) + 'x</span> ' + esc(it.description) + '</li>'; }).join('');
         var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
         var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
-        var ref = '<div class="od-ref">' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
+        var ref = '<div class="od-ref"><span class="od-ordno">' + esc(o.orderNo || '') + '</span> &middot; ' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
         return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' + customNote + ref;
     }
 
@@ -290,23 +290,24 @@
             var items = (o.items || []).map(function (it) { return '<span class="oi">' + '<span class="oi-qty">' + (it.qty || 1) + 'x</span> ' + esc(it.description) + '</span>'; }).join('');
             var badge = o.custom ? ' <span class="order-badge">Custom graphic</span>' : '';
             return '<tr class="order-row" data-row="' + i + '">' +
+                '<td class="order-no">' + (esc(o.orderNo) || '-') + '</td>' +
                 '<td>' + fmtDateTime(o.created * 1000) + '</td>' +
                 '<td class="order-cust"><strong>' + (esc(o.name) || '-') + '</strong><small>' + esc(o.email) + '</small></td>' +
                 '<td class="order-items">' + items + badge + '</td>' +
                 '<td class="order-total">' + fmtMoney(o.amount_total) + '</td>' +
                 '<td class="order-caret" aria-hidden="true">▾</td></tr>' +
-                '<tr class="order-detail-row" data-detail="' + i + '" hidden><td colspan="5">' + renderOrderDetail(o) + '</td></tr>';
+                '<tr class="order-detail-row" data-detail="' + i + '" hidden><td colspan="6">' + renderOrderDetail(o) + '</td></tr>';
         }).join('');
-        tbody.innerHTML = html || '<tr class="empty-row"><td colspan="5">No matching orders.</td></tr>';
+        tbody.innerHTML = html || '<tr class="empty-row"><td colspan="6">No matching orders.</td></tr>';
     }
 
     function ordersExportCsv() {
-        var cols = ['Date', 'Name', 'Email', 'Phone', 'Address', 'Items', 'Total', 'Custom', 'Order ID'];
+        var cols = ['Order #', 'Date', 'Name', 'Email', 'Phone', 'Address', 'Items', 'Total', 'Custom', 'Stripe ID'];
         var rows = [cols].concat(state.orders.map(function (o) {
             var sh = o.shipping || {};
             var addr = [sh.line1, sh.line2, sh.city, sh.state, sh.postal_code, sh.country].filter(Boolean).join(', ');
             var items = (o.config && o.config.length ? o.config : (o.items || []).map(function (it) { return (it.qty || 1) + 'x ' + it.description; })).join(' || ');
-            return [fmtDateTime(o.created * 1000), o.name, o.email, o.phone, addr, items, (o.amount_total / 100).toFixed(2), o.custom ? 'yes' : '', o.id];
+            return [o.orderNo || '', fmtDateTime(o.created * 1000), o.name, o.email, o.phone, addr, items, (o.amount_total / 100).toFixed(2), o.custom ? 'yes' : '', o.id];
         }));
         var csv = rows.map(function (r) { return r.map(function (c) { return '"' + String(c == null ? '' : c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
