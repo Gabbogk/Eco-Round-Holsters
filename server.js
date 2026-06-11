@@ -175,18 +175,18 @@ function mergeWasher(summary, color) {
 const ORDER_ALPHABET = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
 function orderNumber(id) {
     if (!id) return '';
-    // Two FNV-1a streams (different seeds) give ~35 bits of spread, encoded as
-    // exactly 7 Crockford base32 chars. Collisions stay negligible into the tens
-    // of thousands of orders, and the Stripe id remains the true unique key.
+    // Two FNV-1a streams (different seeds) give ~40 bits of spread, encoded as
+    // exactly 8 Crockford base32 chars. Collisions stay negligible into the
+    // hundreds of thousands of orders, and the Stripe id remains the true key.
     let h1 = 0x811c9dc5, h2 = 0xc2b2ae35;
     for (let i = 0; i < id.length; i++) {
         const c = id.charCodeAt(i);
         h1 = (h1 ^ c) >>> 0; h1 = (h1 + ((h1 << 1) + (h1 << 4) + (h1 << 7) + (h1 << 8) + (h1 << 24))) >>> 0;
         h2 = (h2 ^ c) >>> 0; h2 = (h2 + ((h2 << 1) + (h2 << 4) + (h2 << 7) + (h2 << 8) + (h2 << 24))) >>> 0;
     }
-    let n = (h1 >>> 0) * 8 + (h2 & 7); // 0 .. 2^35-1
+    let n = (h1 >>> 0) * 256 + (h2 & 0xff); // 0 .. 2^40-1
     let out = '';
-    for (let k = 0; k < 7; k++) { out = ORDER_ALPHABET[n % 32] + out; n = Math.floor(n / 32); }
+    for (let k = 0; k < 8; k++) { out = ORDER_ALPHABET[n % 32] + out; n = Math.floor(n / 32); }
     return 'ECO-' + out;
 }
 
@@ -194,12 +194,11 @@ function orderNumber(id) {
 // Stripe session + payment so it shows on the customer's receipt and in your
 // Stripe dashboard. Same 7-char ECO- format as the id-derived fallback above.
 function newOrderNumber() {
-    const b = crypto.randomBytes(5); // 40 random bits
+    const b = crypto.randomBytes(5); // 40 random bits -> exactly 8 base32 chars
     let n = 0;
     for (let i = 0; i < 5; i++) n = n * 256 + b[i];
-    n = Math.floor(n / 32); // keep 35 bits -> exactly 7 base32 chars
     let out = '';
-    for (let k = 0; k < 7; k++) { out = ORDER_ALPHABET[n % 32] + out; n = Math.floor(n / 32); }
+    for (let k = 0; k < 8; k++) { out = ORDER_ALPHABET[n % 32] + out; n = Math.floor(n / 32); }
     return 'ECO-' + out;
 }
 
