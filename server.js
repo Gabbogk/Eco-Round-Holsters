@@ -238,8 +238,9 @@ function handleCheckout(req, res) {
             payment_intent_data: { description: 'EcoRound order ' + orderNo, metadata: { order_no: orderNo } },
             phone_number_collection: { enabled: 'true' },
             shipping_address_collection: { allowed_countries: ['US'] },
-            line_items: priced.lines.map((l) => {
-                const desc = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
+            line_items: priced.lines.map((l, i) => {
+                let desc = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
+                if (i === 0) desc = 'Order ' + orderNo + ' · ' + desc; // surface the order # on the receipt/items list
                 return {
                     quantity: l.qty,
                     price_data: {
