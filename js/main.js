@@ -128,9 +128,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ===== Newsletter Form =====
-    // Posts to the same Google Apps Script endpoint as the Coming Soon "Notify Me"
-    // form (de-duplicated server-side), so subscribers land in the same sheet.
-    const NEWSLETTER_ENDPOINT = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyyaG9Q_G8m62eg5Hdxh-zem9kdA805aBLFN8g4kFkrSGzuy3nE98N9f3w/exec';
+    // Posts through our own server (/api/signup), which adds the key and forwards
+    // to the Apps Script - so the Apps Script URL/key stay out of public JS.
+    // Subscribers land in the same de-duplicated sheet as the Coming Soon form.
     const newsletterForm = document.getElementById('newsletterForm');
     newsletterForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -141,11 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const original = btn.textContent;
         btn.disabled = true;
         btn.textContent = 'Sending…';
-        fetch(NEWSLETTER_ENDPOINT, {
+        fetch('/api/signup', {
             method: 'POST',
-            mode: 'no-cors',
-            body: new URLSearchParams({ email: email, source: 'newsletter' })
-        }).then(() => {
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, source: 'newsletter' })
+        }).then((r) => {
+            if (!r.ok) throw new Error('http ' + r.status);
             input.value = '';
             btn.textContent = 'Subscribed!';
             btn.style.background = '#2d7a4a';

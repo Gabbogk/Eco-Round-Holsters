@@ -33,6 +33,18 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyya
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
 
+// --- Admin auth -----------------------------------------------------------
+// Secure mode turns on when ADMIN_PASSWORD is set: the dashboard logs in against
+// it (constant-time, rate-limited) and receives a signed, expiring session
+// token; the Apps Script key then lives ONLY here (APPS_SCRIPT_KEY), never in
+// the browser. Until ADMIN_PASSWORD is set, the legacy flow (type the Apps
+// Script key, validated by the Apps Script) keeps working - so deploying this
+// can never lock you out.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const APPS_SCRIPT_KEY = process.env.APPS_SCRIPT_KEY || '';
+const SECURE_AUTH = !!ADMIN_PASSWORD;
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
 const mimeTypes = {
     '.html': 'text/html',
     '.css': 'text/css',
@@ -83,6 +95,33 @@ function fetchUrl(url, depth) {
             resp.on('data', (c) => { data += c; });
             resp.on('end', () => resolve(data));
         }).on('error', reject);
+    });
+}
+
+// POST a form-encoded body to a URL, following Apps Script's 302 redirect (it
+// redirects POSTs to a googleusercontent echo). Used to add signups server-side.
+function postForm(url, body, depth) {
+    depth = depth || 0;
+    return new Promise((resolve, reject) => {
+        if (depth > 5) return reject(new Error('too many redirects'));
+        const r = https.request(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Content-Length': Buffer.byteLength(body)
+            }
+        }, (resp) => {
+            if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+                resp.resume();
+                return resolve(fetchUrl(resp.headers.location, depth + 1));
+            }
+            let data = '';
+            resp.on('data', (c) => { data += c; });
+            resp.on('end', () => resolve(data));
+        });
+        r.on('error', reject);
+        r.write(body);
+        r.end();
     });
 }
 
@@ -155,6 +194,81 @@ function verifyAdminKey(key) {
         let parsed; try { parsed = JSON.parse(json); } catch (e) { parsed = {}; }
         return !!(parsed && parsed.ok);
     }).catch(() => false);
+}
+
+// Constant-time secret compare (hash both sides so length never leaks).
+function secretEqual(a, b) {
+    const ha = crypto.createHash('sha256').update(String(a)).digest();
+    const hb = crypto.createHash('sha256').update(String(b)).digest();
+    return crypto.timingSafeEqual(ha, hb);
+}
+
+// Signed, expiring session token: base64url(payload).hmac. The signing key is
+// derived from ADMIN_PASSWORD, so rotating the password invalidates old tokens.
+function signSession(ttlMs) {
+    const body = Buffer.from(JSON.stringify({ exp: Date.now() + ttlMs })).toString('base64url');
+    const sig = crypto.createHmac('sha256', 'eco-sess:' + ADMIN_PASSWORD).update(body).digest('base64url');
+    return body + '.' + sig;
+}
+function validSession(token) {
+    if (!SECURE_AUTH || !token || typeof token !== 'string') return false;
+    const dot = token.indexOf('.');
+    if (dot < 1) return false;
+    const body = token.slice(0, dot), sig = token.slice(dot + 1);
+    const expect = crypto.createHmac('sha256', 'eco-sess:' + ADMIN_PASSWORD).update(body).digest('base64url');
+    if (sig.length !== expect.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expect))) return false;
+    let p; try { p = JSON.parse(Buffer.from(body, 'base64url').toString('utf8')); } catch (e) { return false; }
+    return !!(p && typeof p.exp === 'number' && Date.now() < p.exp);
+}
+
+// Resolve true if the request is an authenticated admin: a valid session token
+// in secure mode, or the Apps Script key (validated upstream) in legacy mode.
+function authorizeAdmin(data) {
+    if (SECURE_AUTH) return Promise.resolve(validSession(data && data.token));
+    return verifyAdminKey((data && data.key) || '');
+}
+
+// In-memory login rate limiting per IP (resets on restart - fine for one admin).
+const loginHits = new Map(); // ip -> { n, first, lockUntil }
+const RL_MAX = 8, RL_WINDOW = 15 * 60 * 1000, RL_LOCK = 15 * 60 * 1000;
+function clientIp(req) {
+    const xff = req.headers['x-forwarded-for'];
+    return (xff ? String(xff).split(',')[0].trim() : '') || (req.socket && req.socket.remoteAddress) || 'unknown';
+}
+function loginLockedFor(ip) {
+    const r = loginHits.get(ip);
+    if (!r) return 0;
+    if (r.lockUntil && Date.now() < r.lockUntil) return Math.ceil((r.lockUntil - Date.now()) / 1000);
+    if (r.first && Date.now() - r.first > RL_WINDOW) loginHits.delete(ip);
+    return 0;
+}
+function loginFailed(ip) {
+    const now = Date.now();
+    let r = loginHits.get(ip);
+    if (!r || (r.first && now - r.first > RL_WINDOW)) r = { n: 0, first: now, lockUntil: 0 };
+    r.n++;
+    if (r.n >= RL_MAX) r.lockUntil = now + RL_LOCK;
+    loginHits.set(ip, r);
+    return Math.max(0, RL_MAX - r.n);
+}
+
+// POST /api/admin-login { password } -> { token }. Secure mode only; returns
+// 501 in legacy mode so the dashboard knows to fall back to the Apps Script key.
+function handleAdminLogin(req, res) {
+    const ip = clientIp(req);
+    const lock = loginLockedFor(ip);
+    if (lock > 0) return sendJson(res, 429, { error: 'locked', retry_seconds: lock });
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { error: 'bad_request' });
+        if (!SECURE_AUTH) return sendJson(res, 501, { error: 'not_configured' });
+        const pw = (data && data.password) || '';
+        if (!pw || !secretEqual(pw, ADMIN_PASSWORD)) {
+            const left = loginFailed(ip);
+            return sendJson(res, 401, { error: 'unauthorized', attempts_left: left });
+        }
+        loginHits.delete(ip);
+        sendJson(res, 200, { ok: true, token: signSession(SESSION_TTL_MS) });
+    });
 }
 
 // Fold the washer color into the "Colored Washers" line so it reads as one thing
@@ -326,8 +440,7 @@ function handleOrders(req, res) {
     }
     readJsonBody(req, (err, data) => {
         if (err) return sendJson(res, 400, { error: 'bad_request' });
-        const key = (data && data.key) || '';
-        verifyAdminKey(key).then((okAuth) => {
+        authorizeAdmin(data).then((okAuth) => {
             if (!okAuth) return sendJson(res, 401, { error: 'unauthorized' });
             const url = 'https://api.stripe.com/v1/checkout/sessions?limit=25&expand[]=data.line_items';
             return stripeGet(url).then((r) => {
@@ -375,19 +488,44 @@ function handleOrders(req, res) {
     });
 }
 
+// POST /api/signup { email, source } -> adds a signup. The browser posts here
+// (same-origin) instead of straight to the Apps Script, so the Apps Script URL
+// and key stay on the server and out of public client JS. Attaches APPS_SCRIPT_KEY
+// when set (forward-compatible if the Apps Script later requires a key for writes).
+function handleSignupSubmit(req, res) {
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
+        const email = (data && data.email ? String(data.email) : '').trim();
+        const source = (data && data.source ? String(data.source) : 'web').trim().slice(0, 40);
+        if (!email || email.indexOf('@') < 1 || email.length > 200) {
+            return sendJson(res, 400, { ok: false, error: 'invalid_email' });
+        }
+        const form = new URLSearchParams({ email: email, source: source });
+        if (APPS_SCRIPT_KEY) form.set('key', APPS_SCRIPT_KEY);
+        postForm(APPS_SCRIPT_URL, form.toString())
+            .then(() => sendJson(res, 200, { ok: true }))
+            .catch(() => sendJson(res, 502, { ok: false, error: 'upstream_error' }));
+    });
+}
+
 // Admin data proxy: POST /api/signups { key } -> returns the Apps Script JSON.
 // Same-origin, so no CORS and nothing for ad-blockers to block.
 function handleSignupsApi(req, res) {
-    let body = '';
-    req.on('data', (c) => { body += c; if (body.length > 100000) req.destroy(); });
-    req.on('end', () => {
-        let key = '';
-        try { key = (JSON.parse(body || '{}').key) || ''; } catch (e) { key = ''; }
-        const url = APPS_SCRIPT_URL + '?key=' + encodeURIComponent(key) + '&callback=cb';
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
+        let scriptKey;
+        if (SECURE_AUTH) {
+            // Secure mode: require a valid session token; the Apps Script key
+            // stays server-side and is never accepted from the browser.
+            if (!validSession(data && data.token)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+            scriptKey = APPS_SCRIPT_KEY;
+        } else {
+            scriptKey = (data && data.key) || ''; // legacy: the Apps Script validates it
+        }
+        const url = APPS_SCRIPT_URL + '?key=' + encodeURIComponent(scriptKey) + '&callback=cb';
         fetchUrl(url).then((text) => {
             // Strip the JSONP wrapper: cb({...}) -> {...}
-            const start = text.indexOf('(');
-            const end = text.lastIndexOf(')');
+            const start = text.indexOf('('), end = text.lastIndexOf(')');
             const json = (start >= 0 && end > start) ? text.slice(start + 1, end) : text;
             res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
             res.end(json);
@@ -401,6 +539,8 @@ function handleSignupsApi(req, res) {
 const server = http.createServer((req, res) => {
     const urlPath = req.url.split('?')[0];
 
+    if (req.method === 'POST' && urlPath === '/api/admin-login') return handleAdminLogin(req, res);
+    if (req.method === 'POST' && urlPath === '/api/signup') return handleSignupSubmit(req, res);
     if (req.method === 'POST' && urlPath === '/api/signups') return handleSignupsApi(req, res);
     if (req.method === 'POST' && urlPath === '/api/checkout') return handleCheckout(req, res);
     if (req.method === 'GET' && urlPath === '/api/order') return handleOrder(req, res);

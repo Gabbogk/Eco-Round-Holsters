@@ -1,9 +1,8 @@
 (function () {
     'use strict';
 
-    // Same Apps Script web app that the Notify Me form posts to.
-    var ENDPOINT = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyyaG9Q_G8m62eg5Hdxh-zem9kdA805aBLFN8g4kFkrSGzuy3nE98N9f3w/exec';
-    var KEY_STORE = 'eco_admin_key';
+    var KEY_STORE = 'eco_admin_key';     // legacy: Apps Script key
+    var TOKEN_STORE = 'eco_admin_token'; // secure: signed session token
     var TITLES = { overview: 'Overview', signups: 'Signups', analytics: 'Analytics', products: 'Products', orders: 'Orders', site: 'Site' };
 
     var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '', orders: [], catalog: [], checkoutLive: false, orderFilter: '' };
@@ -23,51 +22,99 @@
     var loginError = document.getElementById('loginError');
     var loginBtn = document.getElementById('loginBtn');
 
-    // ---- fetch through our own server (same-origin proxy; no CORS, ad-blocker-proof) ----
-    function fetchData(key) {
+    // ---- auth ----
+    // We hold either a signed session TOKEN (secure mode) or the legacy Apps
+    // Script KEY. Protected requests send whichever we have.
+    function authPayload() {
+        var token = sessionStorage.getItem(TOKEN_STORE);
+        if (token) return { token: token };
+        var key = sessionStorage.getItem(KEY_STORE);
+        if (key) return { key: key };
+        return {};
+    }
+    function clearAuth() {
+        sessionStorage.removeItem(TOKEN_STORE);
+        sessionStorage.removeItem(KEY_STORE);
+    }
+
+    // Fetch signups with whatever credential we hold (same-origin proxy).
+    function fetchSignups() {
         return fetch('/api/signups', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key: key })
+            body: JSON.stringify(authPayload())
         }).then(function (r) {
             if (!r.ok) throw new Error('http ' + r.status);
             return r.json();
         });
     }
 
-    // ---- auth ----
-    function doLogin(key, isAuto) {
-        if (!isAuto) { loginBtn.textContent = 'Checking…'; loginBtn.disabled = true; }
+    function enterApp(data) {
+        state.signups = (data && data.signups) || [];
+        login.style.display = 'none';
+        app.classList.add('active');
+        renderAll();
+        loadCatalog();
+        loadOrders();
+    }
+
+    // Manual login: try the secure endpoint first, fall back to the legacy key.
+    function doLogin(password) {
+        loginBtn.textContent = 'Checking…'; loginBtn.disabled = true;
         loginError.textContent = '';
-        fetchData(key).then(function (data) {
-            if (data && data.ok) {
-                sessionStorage.setItem(KEY_STORE, key);
-                state.signups = data.signups || [];
-                login.style.display = 'none';
-                app.classList.add('active');
-                renderAll();
-                loadCatalog();
-                loadOrders(key);
-            } else {
-                if (isAuto) { sessionStorage.removeItem(KEY_STORE); }
-                else { loginError.textContent = 'Incorrect password. Try again.'; }
+        fetch('/api/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+        .then(function (res) {
+            if (res.status === 200 && res.j && res.j.token) {
+                sessionStorage.setItem(TOKEN_STORE, res.j.token);
+                sessionStorage.removeItem(KEY_STORE);
+                return fetchSignups().then(enterApp);
             }
+            if (res.status === 429) {
+                var mins = Math.ceil(((res.j && res.j.retry_seconds) || 60) / 60);
+                loginError.textContent = 'Too many attempts. Try again in ' + mins + ' min.';
+                return;
+            }
+            if (res.status === 501) {
+                // Legacy mode: the password IS the Apps Script key.
+                return fetch('/api/signups', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: password })
+                }).then(function (r) { return r.json(); }).then(function (data) {
+                    if (data && data.ok) {
+                        sessionStorage.setItem(KEY_STORE, password);
+                        sessionStorage.removeItem(TOKEN_STORE);
+                        enterApp(data);
+                    } else { loginError.textContent = 'Incorrect password. Try again.'; }
+                });
+            }
+            var left = res.j && typeof res.j.attempts_left === 'number' ? res.j.attempts_left : null;
+            loginError.textContent = 'Incorrect password. Try again.' + (left !== null && left <= 3 ? ' (' + left + ' attempts left)' : '');
         }).catch(function () {
-            if (isAuto) { sessionStorage.removeItem(KEY_STORE); }
-            else { loginError.textContent = 'Could not reach the server - confirm the Apps Script is deployed.'; }
+            loginError.textContent = 'Could not reach the server. Try again.';
         }).finally(function () {
             loginBtn.textContent = 'Log In'; loginBtn.disabled = false;
         });
     }
 
-    loginForm.addEventListener('submit', function (e) { e.preventDefault(); doLogin(passwordInput.value, false); });
+    // Auto-login on load using stored credentials.
+    function tryAutoLogin() {
+        if (!sessionStorage.getItem(TOKEN_STORE) && !sessionStorage.getItem(KEY_STORE)) return;
+        fetchSignups().then(function (data) {
+            if (data && data.ok) enterApp(data); else clearAuth();
+        }).catch(function () { clearAuth(); });
+    }
+
+    loginForm.addEventListener('submit', function (e) { e.preventDefault(); doLogin(passwordInput.value); });
 
     function refresh() {
-        var key = sessionStorage.getItem(KEY_STORE);
-        if (!key) return;
-        fetchData(key).then(function (data) { if (data && data.ok) { state.signups = data.signups || []; renderAll(); } });
+        if (!sessionStorage.getItem(TOKEN_STORE) && !sessionStorage.getItem(KEY_STORE)) return;
+        fetchSignups().then(function (data) { if (data && data.ok) { state.signups = data.signups || []; renderAll(); } });
         loadCatalog();
-        loadOrders(key);
+        loadOrders();
     }
 
     // ---- formatting ----
@@ -169,8 +216,8 @@
     }
 
     // ---- orders (live from Stripe via /api/orders) ----
-    function loadOrders(key) {
-        fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key: key }) })
+    function loadOrders() {
+        fetch('/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(authPayload()) })
             .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
             .then(function (res) {
                 if (res.status === 200 && res.j && res.j.ok) {
@@ -361,10 +408,9 @@
     document.getElementById('searchInput').addEventListener('input', function (e) { state.filter = e.target.value; renderSignups(); });
     document.getElementById('exportBtn').addEventListener('click', exportCsv);
     document.getElementById('refreshBtn').addEventListener('click', refresh);
-    document.getElementById('logoutBtn').addEventListener('click', function () { sessionStorage.removeItem(KEY_STORE); location.reload(); });
+    document.getElementById('logoutBtn').addEventListener('click', function () { clearAuth(); location.reload(); });
     document.getElementById('menuToggle').addEventListener('click', function () { document.getElementById('sidebar').classList.toggle('open'); });
 
-    // auto-login if a key is already in this session
-    var saved = sessionStorage.getItem(KEY_STORE);
-    if (saved) doLogin(saved, true);
+    // auto-login if a session is already stored
+    tryAutoLogin();
 })();
