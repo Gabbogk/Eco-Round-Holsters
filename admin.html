@@ -18,7 +18,8 @@
             <div class="login-logo"><span class="eco">ECO</span>ROUND</div>
             <div class="login-sub">Holsters</div>
             <h1>Admin Dashboard</h1>
-            <input type="password" id="password" placeholder="Enter admin password" autocomplete="current-password" required>
+            <input type="email" id="email" placeholder="Admin email" autocomplete="email" required>
+            <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
             <div class="login-error" id="loginError"></div>
             <button type="submit" class="btn" id="loginBtn">Log In</button>
         </form>
@@ -181,6 +182,8 @@
         </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
     <script src="js/admin.js"></script>
 </body>
 </html>

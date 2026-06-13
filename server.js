@@ -45,6 +45,12 @@ const APPS_SCRIPT_KEY = process.env.APPS_SCRIPT_KEY || '';
 const SECURE_AUTH = !!ADMIN_PASSWORD;
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
+// Supabase (customer accounts). PUBLIC values - same as the browser client. The
+// server verifies an admin using these + the caller's own access token (RLS lets
+// a user read their own profile row), so NO Supabase secret is needed here.
+const SUPABASE_URL = 'https://ofjjbqchnwlhzncntiwv.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_BgDOuBLrhogRDz62BYvoIA_GMzqo1T3';
+
 const mimeTypes = {
     '.html': 'text/html',
     '.css': 'text/css',
@@ -221,9 +227,35 @@ function validSession(token) {
     return !!(p && typeof p.exp === 'number' && Date.now() < p.exp);
 }
 
-// Resolve true if the request is an authenticated admin: a valid session token
-// in secure mode, or the Apps Script key (validated upstream) in legacy mode.
+// GET a Supabase endpoint with the caller's access token + the public apikey.
+function supabaseGet(path, token) {
+    return new Promise((resolve, reject) => {
+        https.get(SUPABASE_URL + path, {
+            headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: 'Bearer ' + token }
+        }, (resp) => {
+            let d = '';
+            resp.on('data', (c) => { d += c; });
+            resp.on('end', () => { let j; try { j = JSON.parse(d); } catch (e) { j = null; } resolve(j); });
+        }).on('error', reject);
+    });
+}
+
+// True if the Supabase access token belongs to an admin (role='admin' in the
+// profiles table). Uses only the token + public key; RLS scopes the read.
+function verifySupabaseAdmin(token) {
+    if (!token || typeof token !== 'string') return Promise.resolve(false);
+    return supabaseGet('/auth/v1/user', token).then((user) => {
+        const uid = user && user.id;
+        if (!uid) return false;
+        return supabaseGet('/rest/v1/profiles?select=role&id=eq.' + encodeURIComponent(uid), token)
+            .then((rows) => !!(Array.isArray(rows) && rows[0] && rows[0].role === 'admin'));
+    }).catch(() => false);
+}
+
+// Resolve true if the request is an authenticated admin: a Supabase admin token,
+// a valid secure-login session token, or the Apps Script key (legacy mode).
 function authorizeAdmin(data) {
+    if (data && data.sbToken) return verifySupabaseAdmin(data.sbToken);
     if (SECURE_AUTH) return Promise.resolve(validSession(data && data.token));
     return verifyAdminKey((data && data.key) || '');
 }
@@ -513,22 +545,19 @@ function handleSignupSubmit(req, res) {
 function handleSignupsApi(req, res) {
     readJsonBody(req, (err, data) => {
         if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
-        let scriptKey;
-        if (SECURE_AUTH) {
-            // Secure mode: require a valid session token; the Apps Script key
-            // stays server-side and is never accepted from the browser.
-            if (!validSession(data && data.token)) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
-            scriptKey = APPS_SCRIPT_KEY;
-        } else {
-            scriptKey = (data && data.key) || ''; // legacy: the Apps Script validates it
-        }
-        const url = APPS_SCRIPT_URL + '?key=' + encodeURIComponent(scriptKey) + '&callback=cb';
-        fetchUrl(url).then((text) => {
-            // Strip the JSONP wrapper: cb({...}) -> {...}
-            const start = text.indexOf('('), end = text.lastIndexOf(')');
-            const json = (start >= 0 && end > start) ? text.slice(start + 1, end) : text;
-            res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-            res.end(json);
+        authorizeAdmin(data).then((okAuth) => {
+            if (!okAuth) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+            // Token-based auth (Supabase/secure) reads the sheet with the server's
+            // APPS_SCRIPT_KEY; legacy auth uses the key the admin typed.
+            const scriptKey = APPS_SCRIPT_KEY || (data && data.key) || '';
+            const url = APPS_SCRIPT_URL + '?key=' + encodeURIComponent(scriptKey) + '&callback=cb';
+            return fetchUrl(url).then((text) => {
+                // Strip the JSONP wrapper: cb({...}) -> {...}
+                const start = text.indexOf('('), end = text.lastIndexOf(')');
+                const json = (start >= 0 && end > start) ? text.slice(start + 1, end) : text;
+                res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+                res.end(json);
+            });
         }).catch(() => {
             res.writeHead(502, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: false, error: 'upstream_error' }));

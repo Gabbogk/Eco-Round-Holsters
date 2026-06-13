@@ -40,7 +40,7 @@
         return null;
     }
 
-    function render(user) {
+    function render(user, isAdmin) {
         var mp = mountPoint();
         if (!mp) return;
         var nav = document.getElementById('acctNav');
@@ -51,19 +51,29 @@
             nav.className = 'acct-nav';
             mp.host.insertBefore(nav, mp.before);
         }
-        nav.innerHTML = user
-            ? '<a class="acct-link" href="/account.html">Account</a>'
-            : '<a class="acct-link" href="/account.html">Sign In</a>';
+        if (!user) { nav.innerHTML = '<a class="acct-link" href="/account.html">Sign In</a>'; return; }
+        var html = '';
+        if (isAdmin) html += '<a class="acct-link admin" href="/admin.html">Admin</a>';
+        html += '<a class="acct-link" href="/account.html">Account</a>';
+        nav.innerHTML = html;
+    }
+
+    // Look up the signed-in user's role from the profiles table (RLS lets a user
+    // read only their own row). Missing table/row -> treat as a normal customer.
+    function refresh() {
+        if (!window.sb) { render(null); return; }
+        window.sb.auth.getUser().then(function (res) {
+            var user = res && res.data ? res.data.user : null;
+            if (!user) { render(null); return; }
+            window.sb.from('profiles').select('role').eq('id', user.id).single()
+                .then(function (pr) { render(user, !!(pr && pr.data && pr.data.role === 'admin')); })
+                .catch(function () { render(user, false); });
+        }).catch(function () { render(null); });
     }
 
     function wire() {
-        if (!window.sb) { render(null); return; } // graceful: still show "Sign In"
-        window.sb.auth.getUser()
-            .then(function (res) { render(res && res.data ? res.data.user : null); })
-            .catch(function () { render(null); });
-        window.sb.auth.onAuthStateChange(function () {
-            window.sb.auth.getUser().then(function (res) { render(res && res.data ? res.data.user : null); });
-        });
+        refresh();
+        if (window.sb) window.sb.auth.onAuthStateChange(refresh);
     }
 
     ready(function () {
