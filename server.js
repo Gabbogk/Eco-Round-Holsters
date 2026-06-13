@@ -370,6 +370,7 @@ function handleCheckout(req, res) {
         // Stash a per-line "what to build" summary in metadata (max 50 keys /
         // 500 chars each) so the admin Orders view can show the full config.
         const orderNo = newOrderNumber();
+        const customerEmail = (data && typeof data.customerEmail === 'string' && /.+@.+\..+/.test(data.customerEmail)) ? data.customerEmail.slice(0, 200) : '';
         const meta = { order_no: orderNo };
         priced.lines.slice(0, 45).forEach((l, i) => {
             const cfg = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
@@ -381,6 +382,7 @@ function handleCheckout(req, res) {
             mode: 'payment',
             success_url: origin + '/success.html?session_id={CHECKOUT_SESSION_ID}',
             cancel_url: origin + '/cancel.html',
+            customer_email: customerEmail || undefined,
             payment_intent_data: { description: 'EcoRound order ' + orderNo, metadata: { order_no: orderNo } },
             phone_number_collection: { enabled: 'true' },
             shipping_address_collection: { allowed_countries: ['US'] },
@@ -520,6 +522,34 @@ function handleOrders(req, res) {
     });
 }
 
+// POST /api/my-orders { sbToken } -> the signed-in customer's own paid orders.
+// The email comes from the VERIFIED Supabase token (never a client param), so a
+// customer can only ever see orders that match their own account email.
+function handleMyOrders(req, res) {
+    if (!STRIPE_SECRET_KEY) return sendJson(res, 200, { ok: true, orders: [] });
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
+        supabaseGet('/auth/v1/user', data && data.sbToken).then((user) => {
+            const email = (user && user.email) ? String(user.email).toLowerCase() : '';
+            if (!email) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+            const url = 'https://api.stripe.com/v1/checkout/sessions?limit=100&expand[]=data.line_items';
+            return stripeGet(url).then((r) => {
+                if (r.status >= 300) return sendJson(res, 502, { ok: false, error: 'stripe_error' });
+                const orders = (r.json.data || []).filter((s) => {
+                    const e = (s.customer_details && s.customer_details.email) ? s.customer_details.email.toLowerCase() : '';
+                    return s.payment_status === 'paid' && e === email;
+                }).map((s) => ({
+                    orderNo: (s.metadata && s.metadata.order_no) || orderNumber(s.id),
+                    created: s.created,
+                    amount_total: s.amount_total,
+                    items: ((s.line_items && s.line_items.data) || []).map((li) => ({ description: li.description, qty: li.quantity }))
+                }));
+                sendJson(res, 200, { ok: true, orders: orders });
+            });
+        }).catch(() => sendJson(res, 502, { ok: false, error: 'upstream_error' }));
+    });
+}
+
 // POST /api/signup { email, source } -> adds a signup. The browser posts here
 // (same-origin) instead of straight to the Apps Script, so the Apps Script URL
 // and key stay on the server and out of public client JS. Attaches APPS_SCRIPT_KEY
@@ -575,6 +605,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET' && urlPath === '/api/order') return handleOrder(req, res);
     if (req.method === 'GET' && urlPath === '/api/catalog') return handleCatalog(req, res);
     if (req.method === 'POST' && urlPath === '/api/orders') return handleOrders(req, res);
+    if (req.method === 'POST' && urlPath === '/api/my-orders') return handleMyOrders(req, res);
 
     let filePath = path.join(__dirname, urlPath === '/' ? '/index.html' : urlPath);
     const ext = path.extname(filePath);

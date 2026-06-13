@@ -26,8 +26,38 @@
     function refreshView() {
         return sb.auth.getUser().then(function (res) {
             var user = res && res.data ? res.data.user : null;
-            if (user) { el('whoEmail').textContent = user.email || ''; show('signedInView'); }
+            if (user) { el('whoEmail').textContent = user.email || ''; show('signedInView'); loadMyOrders(); }
             else { show('authView'); }
+        });
+    }
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+    // --- the customer's own order history ---
+    function loadMyOrders() {
+        var box = el('myOrders');
+        if (!box) return;
+        box.innerHTML = '<div class="acct-orders-loading">Loading your orders…</div>';
+        sb.auth.getSession().then(function (s) {
+            var token = (s && s.data && s.data.session) ? s.data.session.access_token : null;
+            return fetch('/api/my-orders', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sbToken: token })
+            }).then(function (r) { return r.json(); });
+        }).then(function (d) {
+            var orders = (d && d.orders) || [];
+            if (!orders.length) {
+                box.innerHTML = '<h3>Your Orders</h3><div class="acct-orders-empty">No orders yet. When you place an order it will show up here.</div>';
+                return;
+            }
+            box.innerHTML = '<h3>Your Orders</h3>' + orders.map(function (o) {
+                var date = new Date(o.created * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                var items = (o.items || []).map(function (it) { return (it.qty > 1 ? it.qty + 'x ' : '') + esc(it.description || ''); }).join(', ');
+                var total = '$' + ((o.amount_total || 0) / 100).toFixed(2);
+                return '<div class="acct-order"><div class="ao-top"><span class="ao-no">' + esc(o.orderNo || '') + '</span><span class="ao-total">' + total + '</span></div>' +
+                    '<div class="ao-date">' + date + '</div><div class="ao-items">' + items + '</div></div>';
+            }).join('');
+        }).catch(function () {
+            box.innerHTML = '<h3>Your Orders</h3><div class="acct-orders-empty">Could not load your orders right now.</div>';
         });
     }
 

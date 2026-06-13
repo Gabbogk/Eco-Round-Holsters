@@ -34,6 +34,15 @@
         .acct-foot a { color: var(--color-text-dim, #888); font-size: .8rem; }
         .acct-signedin { text-align: center; }
         .acct-signedin .who { color: var(--color-primary-hover, #6cae7e); font-weight: 600; }
+        .acct-orders { text-align: left; margin: 18px 0 4px; }
+        .acct-orders h3 { font-family: var(--font-heading); font-size: .8rem; letter-spacing: 1px; text-transform: uppercase; color: var(--color-text-dim, #999); margin: 0 0 10px; }
+        .acct-order { background: #141414; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 11px 13px; margin-bottom: 9px; }
+        .acct-order .ao-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 3px; }
+        .acct-order .ao-no { font-family: var(--font-heading); color: var(--color-primary-hover, #6cae7e); letter-spacing: .5px; font-size: .84rem; }
+        .acct-order .ao-total { font-weight: 600; font-size: .86rem; }
+        .acct-order .ao-date { color: var(--color-text-dim, #888); font-size: .74rem; margin-bottom: 3px; }
+        .acct-order .ao-items { color: var(--color-text-muted, #bbb); font-size: .78rem; line-height: 1.5; }
+        .acct-orders-empty, .acct-orders-loading { color: var(--color-text-dim, #888); font-size: .82rem; text-align: center; padding: 8px 0; }
     </style>
 </head>
 <body>
@@ -75,8 +84,8 @@
             <!-- Logged-in view -->
             <div id="signedInView" class="acct-signedin" hidden>
                 <p>Signed in as <span class="who" id="whoEmail"></span></p>
-                <p style="color:var(--color-text-dim,#999);font-size:.85rem;margin:10px 0 20px;">Your account is active.</p>
-                <a href="/home.html" class="acct-btn" style="display:block;text-decoration:none;margin-bottom:10px;box-sizing:border-box;">Continue Shopping</a>
+                <div id="myOrders" class="acct-orders"></div>
+                <a href="/home.html" class="acct-btn" style="display:block;text-decoration:none;margin:18px 0 10px;box-sizing:border-box;">Continue Shopping</a>
                 <button type="button" class="acct-btn" id="logoutBtn" style="background:transparent;border:1px solid rgba(255,255,255,.15);">Log Out</button>
             </div>
 

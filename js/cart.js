@@ -176,20 +176,34 @@
         });
     }
 
+    // The signed-in customer's email (if logged in via Supabase), so the order
+    // links to their account for "My Orders". Resolves null for guests.
+    function currentEmail() {
+        if (window.sb && window.sb.auth) {
+            return window.sb.auth.getSession()
+                .then(function (s) { return (s && s.data && s.data.session) ? s.data.session.user.email : null; })
+                .catch(function () { return null; });
+        }
+        return Promise.resolve(null);
+    }
+
     function checkout() {
         var items = load();
         if (!items.length) return;
         errEl.textContent = '';
         checkoutBtn.disabled = true;
         checkoutBtn.textContent = 'Redirecting…';
-        fetch('/api/checkout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                items: items.map(function (it) {
-                    return { id: it.id, options: it.options || [], gun: it.gun || '', washerColor: it.washerColor || '', summary: it.summary || '', qty: it.qty || 1 };
+        currentEmail().then(function (email) {
+            return fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: items.map(function (it) {
+                        return { id: it.id, options: it.options || [], gun: it.gun || '', washerColor: it.washerColor || '', summary: it.summary || '', qty: it.qty || 1 };
+                    }),
+                    customerEmail: email || undefined
                 })
-            })
+            });
         }).then(function (r) {
             return r.json().then(function (j) { return { ok: r.ok, j: j }; });
         }).then(function (res) {
