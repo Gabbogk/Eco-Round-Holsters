@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account | EcoRound Holsters</title>
+    <meta name="robots" content="noindex">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .acct-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px;
+            background: radial-gradient(circle at 50% -10%, rgba(74,124,89,.18), transparent 55%), linear-gradient(135deg, #141414 0%, #1d271f 50%, #141414 100%); }
+        .acct-logo { transform: scale(1.2); margin-bottom: 28px; }
+        .acct-card { width: 100%; max-width: 400px; background: var(--color-bg-card, #1c1c1c); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 30px 28px; }
+        .acct-tabs { display: flex; gap: 6px; margin-bottom: 22px; background: rgba(0,0,0,.25); border-radius: 10px; padding: 4px; }
+        .acct-tab { flex: 1; text-align: center; padding: 9px; border-radius: 7px; font-family: var(--font-heading); font-size: .8rem; letter-spacing: 1px; text-transform: uppercase; color: var(--color-text-dim, #999); cursor: pointer; border: none; background: transparent; }
+        .acct-tab.active { background: var(--color-primary, #4a7c59); color: #fff; }
+        .acct-form { display: none; }
+        .acct-form.active { display: block; }
+        .acct-card label { display: block; font-size: .78rem; color: var(--color-text-dim, #aaa); margin: 0 0 5px; }
+        .acct-card input { width: 100%; padding: 11px 13px; margin-bottom: 15px; background: #141414; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: #fff; font-size: .95rem; box-sizing: border-box; }
+        .acct-card input:focus { outline: none; border-color: var(--color-primary, #4a7c59); }
+        .acct-btn { width: 100%; padding: 12px; background: var(--color-primary, #4a7c59); color: #fff; border: none; border-radius: 8px; font-family: var(--font-heading); letter-spacing: 1px; text-transform: uppercase; font-size: .85rem; cursor: pointer; }
+        .acct-btn:hover { background: var(--color-primary-hover, #5a9469); }
+        .acct-btn:disabled { opacity: .6; cursor: default; }
+        .acct-msg { font-size: .82rem; margin: 4px 0 12px; min-height: 18px; line-height: 1.4; }
+        .acct-msg.err { color: #e08585; }
+        .acct-msg.ok { color: var(--color-primary-hover, #6cae7e); }
+        .acct-alt { text-align: center; font-size: .8rem; margin-top: 14px; color: var(--color-text-dim, #999); }
+        .acct-alt a { color: var(--color-primary-hover, #6cae7e); cursor: pointer; }
+        .acct-foot { margin-top: 22px; text-align: center; }
+        .acct-foot a { color: var(--color-text-dim, #888); font-size: .8rem; }
+        .acct-signedin { text-align: center; }
+        .acct-signedin .who { color: var(--color-primary-hover, #6cae7e); font-weight: 600; }
+    </style>
+</head>
+<body>
+    <main class="acct-wrap">
+        <a href="/home.html" class="logo acct-logo">
+            <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+            <span class="logo-sub">HOLSTERS</span>
+        </a>
+
+        <div class="acct-card">
+            <!-- Logged-out view -->
+            <div id="authView">
+                <div class="acct-tabs">
+                    <button type="button" class="acct-tab active" data-tab="signin">Sign In</button>
+                    <button type="button" class="acct-tab" data-tab="signup">Create Account</button>
+                </div>
+
+                <form class="acct-form active" id="signinForm" data-form="signin">
+                    <label for="siEmail">Email</label>
+                    <input type="email" id="siEmail" autocomplete="email" required>
+                    <label for="siPass">Password</label>
+                    <input type="password" id="siPass" autocomplete="current-password" required>
+                    <div class="acct-msg" id="siMsg"></div>
+                    <button type="submit" class="acct-btn" id="siBtn">Sign In</button>
+                    <div class="acct-alt"><a id="forgotLink">Forgot your password?</a></div>
+                </form>
+
+                <form class="acct-form" id="signupForm" data-form="signup">
+                    <label for="suEmail">Email</label>
+                    <input type="email" id="suEmail" autocomplete="email" required>
+                    <label for="suPass">Password (8+ characters)</label>
+                    <input type="password" id="suPass" autocomplete="new-password" minlength="8" required>
+                    <div class="acct-msg" id="suMsg"></div>
+                    <button type="submit" class="acct-btn" id="suBtn">Create Account</button>
+                    <div class="acct-alt">By creating an account you agree to our <a href="/terms.html">Terms</a>.</div>
+                </form>
+            </div>
+
+            <!-- Logged-in view -->
+            <div id="signedInView" class="acct-signedin" hidden>
+                <p>Signed in as <span class="who" id="whoEmail"></span></p>
+                <p style="color:var(--color-text-dim,#999);font-size:.85rem;margin:10px 0 20px;">Your account is active.</p>
+                <a href="/home.html" class="acct-btn" style="display:block;text-decoration:none;margin-bottom:10px;box-sizing:border-box;">Continue Shopping</a>
+                <button type="button" class="acct-btn" id="logoutBtn" style="background:transparent;border:1px solid rgba(255,255,255,.15);">Log Out</button>
+            </div>
+
+            <!-- Password recovery view (shown when arriving from a reset email) -->
+            <div id="resetView" hidden>
+                <p style="color:var(--color-text-dim,#999);font-size:.85rem;margin:0 0 16px;">Set a new password for your account.</p>
+                <form id="resetForm">
+                    <label for="rpPass">New password (8+ characters)</label>
+                    <input type="password" id="rpPass" autocomplete="new-password" minlength="8" required>
+                    <div class="acct-msg" id="rpMsg"></div>
+                    <button type="submit" class="acct-btn" id="rpBtn">Update Password</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="acct-foot"><a href="/home.html">&larr; Back to store</a></div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/account.js"></script>
+</body>
+</html>
