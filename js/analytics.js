@@ -11,7 +11,7 @@
 (function () {
     'use strict';
 
-    var GA_MEASUREMENT_ID = ''; // e.g. 'G-ABCD1234EF' - leave empty to keep analytics OFF
+    var GA_MEASUREMENT_ID = 'G-7GWELZ0N7V'; // EcoRound Holsters GA4 - public value (ships in page source)
 
     if (!GA_MEASUREMENT_ID) return; // not configured yet → no tracking, no banner
 
