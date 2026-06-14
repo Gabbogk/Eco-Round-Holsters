@@ -538,12 +538,28 @@ function handleMyOrders(req, res) {
                 const orders = (r.json.data || []).filter((s) => {
                     const e = (s.customer_details && s.customer_details.email) ? s.customer_details.email.toLowerCase() : '';
                     return s.payment_status === 'paid' && e === email;
-                }).map((s) => ({
-                    orderNo: (s.metadata && s.metadata.order_no) || orderNumber(s.id),
-                    created: s.created,
-                    amount_total: s.amount_total,
-                    items: ((s.line_items && s.line_items.data) || []).map((li) => ({ description: li.description, qty: li.quantity }))
-                }));
+                }).map((s) => {
+                    const cd = s.customer_details || {};
+                    const sd = s.shipping_details || s.shipping || (s.collected_information && s.collected_information.shipping_details) || null;
+                    const addr = (sd && sd.address) || cd.address || {};
+                    const meta = s.metadata || {};
+                    const config = [];
+                    for (let i = 0; i < 50; i++) { if (meta['item_' + i]) config.push(meta['item_' + i]); else break; }
+                    return {
+                        orderNo: meta.order_no || orderNumber(s.id),
+                        created: s.created,
+                        amount_total: s.amount_total,
+                        currency: s.currency,
+                        items: ((s.line_items && s.line_items.data) || []).map((li) => ({ description: li.description, qty: li.quantity, amount: li.amount_total })),
+                        config: config,
+                        shipping: {
+                            name: (sd && sd.name) || cd.name || '',
+                            line1: addr.line1 || '', line2: addr.line2 || '',
+                            city: addr.city || '', state: addr.state || '',
+                            postal_code: addr.postal_code || '', country: addr.country || ''
+                        }
+                    };
+                });
                 sendJson(res, 200, { ok: true, orders: orders });
             });
         }).catch(() => sendJson(res, 502, { ok: false, error: 'upstream_error' }));

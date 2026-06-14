@@ -5,6 +5,7 @@
 (function () {
     'use strict';
     var sb = window.sb;
+    var currentEmail = '';
     function el(id) { return document.getElementById(id); }
     function setMsg(id, text, ok) {
         var m = el(id); if (!m) return;
@@ -26,14 +27,42 @@
     function refreshView() {
         return sb.auth.getUser().then(function (res) {
             var user = res && res.data ? res.data.user : null;
-            if (user) { el('whoEmail').textContent = user.email || ''; show('signedInView'); loadMyOrders(); }
-            else { show('authView'); }
+            if (user) { currentEmail = user.email || ''; el('whoEmail').textContent = currentEmail; show('signedInView'); loadMyOrders(); }
+            else { currentEmail = ''; show('authView'); }
         });
     }
 
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
     // --- the customer's own order history ---
+    function money(cents) { return '$' + ((cents || 0) / 100).toFixed(2); }
+    // The server prefixes the first line item's description with "Order ECO-… · "
+    // (so it shows on the Stripe receipt); strip it here so it doesn't read twice
+    // next to the order number.
+    function cleanDesc(s) { return String(s || '').replace(/^Order\s+ECO-\w+\s*·\s*/i, ''); }
+    // Best build text for a line: the metadata config line (product + gun + options)
+    // when present, otherwise the line item description.
+    function lineText(o, i, it) { return (o.config && o.config[i]) ? o.config[i] : cleanDesc(it.description); }
+
+    function orderDetail(o) {
+        var lines = (o.items || []).map(function (it, i) {
+            var qty = (it.qty > 1) ? it.qty + '× ' : '';
+            return '<div class="ao-line"><span>' + qty + esc(lineText(o, i, it)) + '</span><span class="ao-amt">' + money(it.amount) + '</span></div>';
+        }).join('');
+        var sh = o.shipping || {};
+        var ship = '';
+        if (sh.line1 || sh.city) {
+            var cityLine = [sh.city, sh.state].filter(Boolean).map(esc).join(', ');
+            if (sh.postal_code) cityLine += ' ' + esc(sh.postal_code);
+            ship = '<div class="ao-ship"><b>Ship to</b>' +
+                (sh.name ? esc(sh.name) + '<br>' : '') +
+                (sh.line1 ? esc(sh.line1) + '<br>' : '') +
+                (sh.line2 ? esc(sh.line2) + '<br>' : '') +
+                cityLine + '</div>';
+        }
+        return lines + ship;
+    }
+
     function loadMyOrders() {
         var box = el('myOrders');
         if (!box) return;
@@ -51,15 +80,39 @@
             }
             box.innerHTML = '<h3>Your Orders</h3>' + orders.map(function (o) {
                 var date = new Date(o.created * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                var items = (o.items || []).map(function (it) { return (it.qty > 1 ? it.qty + 'x ' : '') + esc(it.description || ''); }).join(', ');
-                var total = '$' + ((o.amount_total || 0) / 100).toFixed(2);
-                return '<div class="acct-order"><div class="ao-top"><span class="ao-no">' + esc(o.orderNo || '') + '</span><span class="ao-total">' + total + '</span></div>' +
-                    '<div class="ao-date">' + date + '</div><div class="ao-items">' + items + '</div></div>';
+                var summary = (o.items || []).map(function (it, i) {
+                    return (it.qty > 1 ? it.qty + '× ' : '') + esc(lineText(o, i, it));
+                }).join(', ');
+                return '<div class="acct-order">' +
+                    '<div class="ao-head" role="button" tabindex="0">' +
+                      '<div class="ao-top"><span class="ao-no">' + esc(o.orderNo || '') + '</span><span class="ao-total">' + money(o.amount_total) + '</span></div>' +
+                      '<div class="ao-date">' + date + ' <span class="ao-chev">&#9662;</span></div>' +
+                      '<div class="ao-items">' + summary + '</div>' +
+                    '</div>' +
+                    '<div class="ao-detail" hidden>' + orderDetail(o) + '</div>' +
+                  '</div>';
             }).join('');
         }).catch(function () {
             box.innerHTML = '<h3>Your Orders</h3><div class="acct-orders-empty">Could not load your orders right now.</div>';
         });
     }
+
+    // Expand/collapse an order to reveal its detail (delegated, so it survives reloads).
+    function toggleOrder(head) {
+        var card = head.parentNode;
+        var det = card.querySelector('.ao-detail');
+        var open = card.classList.toggle('open');
+        if (det) det.hidden = !open;
+    }
+    el('myOrders').addEventListener('click', function (e) {
+        var head = e.target.closest('.ao-head');
+        if (head) toggleOrder(head);
+    });
+    el('myOrders').addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        var head = e.target.closest('.ao-head');
+        if (head) { e.preventDefault(); toggleOrder(head); }
+    });
 
     // --- tab switching (Sign In / Create Account) ---
     document.querySelectorAll('.acct-tab').forEach(function (t) {
@@ -121,6 +174,55 @@
             if (res.error) { setMsg('rpMsg', res.error.message, false); }
             else { setMsg('rpMsg', 'Password updated!', true); setTimeout(refreshView, 1200); }
         }).catch(function () { setMsg('rpMsg', 'Something went wrong. Try again.', false); })
+            .finally(function () { btn.disabled = false; btn.textContent = 'Update Password'; });
+    });
+
+    // --- account settings: reveal/hide ---
+    el('settingsToggle').addEventListener('click', function () {
+        var open = el('settings').classList.toggle('open');
+        el('settingsBody').hidden = !open;
+        el('settingsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+
+    // Confirm the customer's identity before a sensitive change by re-signing in
+    // with the password they typed. Resolves true on success, sets msg + false on fail.
+    function reauth(password, msgId) {
+        if (!currentEmail) { setMsg(msgId, 'Please sign in again.', false); return Promise.resolve(false); }
+        return sb.auth.signInWithPassword({ email: currentEmail, password: password }).then(function (res) {
+            if (res.error) { setMsg(msgId, 'Current password is incorrect.', false); return false; }
+            return true;
+        });
+    }
+
+    // --- change email ---
+    el('emailForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = el('ceBtn'), newEmail = el('ceEmail').value.trim();
+        btn.disabled = true; btn.textContent = 'Saving…'; setMsg('ceMsg', '');
+        reauth(el('ceCur').value, 'ceMsg').then(function (ok) {
+            if (!ok) return;
+            return sb.auth.updateUser({ email: newEmail }).then(function (res) {
+                if (res.error) { setMsg('ceMsg', res.error.message, false); return; }
+                var applied = res.data && res.data.user && (res.data.user.email || '').toLowerCase() === newEmail.toLowerCase();
+                if (applied) { setMsg('ceMsg', 'Email updated.', true); el('emailForm').reset(); refreshView(); }
+                else { setMsg('ceMsg', 'Almost there - check ' + newEmail + ' to confirm the change.', true); el('emailForm').reset(); }
+            });
+        }).catch(function () { setMsg('ceMsg', 'Something went wrong. Try again.', false); })
+            .finally(function () { btn.disabled = false; btn.textContent = 'Update Email'; });
+    });
+
+    // --- change password ---
+    el('passForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = el('cpBtn'), newPass = el('cpNew').value;
+        btn.disabled = true; btn.textContent = 'Saving…'; setMsg('cpMsg', '');
+        reauth(el('cpCur').value, 'cpMsg').then(function (ok) {
+            if (!ok) return;
+            return sb.auth.updateUser({ password: newPass }).then(function (res) {
+                if (res.error) { setMsg('cpMsg', res.error.message, false); return; }
+                setMsg('cpMsg', 'Password updated.', true); el('passForm').reset();
+            });
+        }).catch(function () { setMsg('cpMsg', 'Something went wrong. Try again.', false); })
             .finally(function () { btn.disabled = false; btn.textContent = 'Update Password'; });
     });
 

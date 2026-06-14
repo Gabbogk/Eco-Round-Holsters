@@ -43,6 +43,25 @@
         .acct-order .ao-date { color: var(--color-text-dim, #888); font-size: .74rem; margin-bottom: 3px; }
         .acct-order .ao-items { color: var(--color-text-muted, #bbb); font-size: .78rem; line-height: 1.5; }
         .acct-orders-empty, .acct-orders-loading { color: var(--color-text-dim, #888); font-size: .82rem; text-align: center; padding: 8px 0; }
+        .acct-order .ao-head { cursor: pointer; }
+        .acct-order .ao-chev { color: var(--color-text-dim, #888); font-size: .7rem; transition: transform .15s; display: inline-block; }
+        .acct-order.open .ao-chev { transform: rotate(180deg); }
+        .acct-order.open .ao-items { display: none; }
+        .acct-order .ao-detail { margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,.08); }
+        .acct-order .ao-line { display: flex; justify-content: space-between; gap: 10px; font-size: .78rem; color: var(--color-text-muted, #c4c4c4); line-height: 1.45; margin-bottom: 5px; }
+        .acct-order .ao-line .ao-amt { color: #fff; white-space: nowrap; }
+        .acct-order .ao-ship { margin-top: 8px; font-size: .75rem; color: var(--color-text-dim, #999); line-height: 1.5; }
+        .acct-order .ao-ship b { color: var(--color-text-dim, #aaa); font-weight: 600; display: block; font-size: .68rem; letter-spacing: .5px; text-transform: uppercase; margin-bottom: 2px; }
+        /* Account settings (change email / password) */
+        .acct-settings { margin: 16px 0 4px; text-align: left; }
+        .acct-settings-toggle { width: 100%; display: flex; justify-content: space-between; align-items: center; background: transparent; border: none; color: var(--color-text-dim, #999); font-family: var(--font-heading); font-size: .78rem; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; padding: 6px 0; }
+        .acct-settings-toggle .chev { font-size: .7rem; transition: transform .15s; }
+        .acct-settings.open .acct-settings-toggle .chev { transform: rotate(180deg); }
+        .acct-settings-body { padding-top: 8px; }
+        .acct-subform label { font-size: .72rem; }
+        .acct-subform input { margin-bottom: 11px; }
+        .acct-btn-sm { padding: 9px; font-size: .78rem; }
+        .acct-sep { height: 1px; background: rgba(255,255,255,.08); margin: 16px 0; }
     </style>
 </head>
 <body>
@@ -85,6 +104,32 @@
             <div id="signedInView" class="acct-signedin" hidden>
                 <p>Signed in as <span class="who" id="whoEmail"></span></p>
                 <div id="myOrders" class="acct-orders"></div>
+
+                <div class="acct-settings" id="settings">
+                    <button type="button" class="acct-settings-toggle" id="settingsToggle" aria-expanded="false">
+                        Account settings <span class="chev">&#9662;</span>
+                    </button>
+                    <div class="acct-settings-body" id="settingsBody" hidden>
+                        <form id="emailForm" class="acct-subform">
+                            <label for="ceEmail">New email</label>
+                            <input type="email" id="ceEmail" autocomplete="email" required>
+                            <label for="ceCur">Current password</label>
+                            <input type="password" id="ceCur" autocomplete="current-password" required>
+                            <div class="acct-msg" id="ceMsg"></div>
+                            <button type="submit" class="acct-btn acct-btn-sm" id="ceBtn">Update Email</button>
+                        </form>
+                        <div class="acct-sep"></div>
+                        <form id="passForm" class="acct-subform">
+                            <label for="cpCur">Current password</label>
+                            <input type="password" id="cpCur" autocomplete="current-password" required>
+                            <label for="cpNew">New password (8+ characters)</label>
+                            <input type="password" id="cpNew" autocomplete="new-password" minlength="8" required>
+                            <div class="acct-msg" id="cpMsg"></div>
+                            <button type="submit" class="acct-btn acct-btn-sm" id="cpBtn">Update Password</button>
+                        </form>
+                    </div>
+                </div>
+
                 <a href="/home.html" class="acct-btn" style="display:block;text-decoration:none;margin:18px 0 10px;box-sizing:border-box;">Continue Shopping</a>
                 <button type="button" class="acct-btn" id="logoutBtn" style="background:transparent;border:1px solid rgba(255,255,255,.15);">Log Out</button>
             </div>
