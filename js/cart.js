@@ -199,7 +199,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     items: items.map(function (it) {
-                        return { id: it.id, options: it.options || [], gun: it.gun || '', washerColor: it.washerColor || '', summary: it.summary || '', qty: it.qty || 1 };
+                        // name + unit are display-only (server still recomputes price from catalog.js);
+                        // they ride along so the order's reorder snapshot can rebuild a full cart line.
+                        return { id: it.id, name: it.name || '', options: it.options || [], gun: it.gun || '', washerColor: it.washerColor || '', summary: it.summary || '', unit: it.unit || 0, qty: it.qty || 1 };
                     }),
                     customerEmail: email || undefined
                 })

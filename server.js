@@ -379,10 +379,24 @@ function handleCheckout(req, res) {
         const orderNo = newOrderNumber();
         const customerEmail = (data && typeof data.customerEmail === 'string' && /.+@.+\..+/.test(data.customerEmail)) ? data.customerEmail.slice(0, 200) : '';
         const meta = { order_no: orderNo };
-        priced.lines.slice(0, 45).forEach((l, i) => {
+        const rawItems = (data && Array.isArray(data.items)) ? data.items : [];
+        // Cap at 24 lines so item_* (build sheet) + ro_* (reorder snapshot) + order_no
+        // stay within Stripe's 50-key metadata limit. No real order has 24 distinct lines.
+        priced.lines.slice(0, 24).forEach((l, i) => {
             const cfg = mergeWasher(l.summary || 'Custom-configured', l.washerColor);
             const line = l.name + (l.gun ? ' (' + l.gun + ')' : '') + ' | ' + cfg + (l.qty > 1 ? ' (Qty ' + l.qty + ')' : '');
             meta['item_' + i] = line.slice(0, 490);
+            // Compact per-line reorder snapshot (rebuilds the cart from My Orders). Fields
+            // are capped so each value stays well under Stripe's 500-char metadata limit.
+            const raw = rawItems[i];
+            if (raw) {
+                meta['ro_' + i] = JSON.stringify({
+                    id: raw.id, n: String(raw.name || l.name || '').slice(0, 80),
+                    o: Array.isArray(raw.options) ? raw.options : [], g: raw.gun || '',
+                    w: raw.washerColor || '', s: String(raw.summary || cfg).slice(0, 140),
+                    u: raw.unit || 0, q: raw.qty || 1
+                });
+            }
         });
 
         const params = {
@@ -552,13 +566,24 @@ function handleMyOrders(req, res) {
                     const meta = s.metadata || {};
                     const config = [];
                     for (let i = 0; i < 50; i++) { if (meta['item_' + i]) config.push(meta['item_' + i]); else break; }
+                    const reorder = [];
+                    for (let i = 0; i < 50; i++) {
+                        if (!meta['ro_' + i]) break;
+                        try {
+                            const r = JSON.parse(meta['ro_' + i]);
+                            reorder.push({ id: r.id, name: r.n || '', options: r.o || [], gun: r.g || '', washerColor: r.w || '', summary: r.s || '', unit: r.u || 0, qty: r.q || 1 });
+                        } catch (e) { /* skip a malformed snapshot line */ }
+                    }
                     return {
                         orderNo: meta.order_no || orderNumber(s.id),
                         created: s.created,
                         amount_total: s.amount_total,
+                        subtotal: s.amount_subtotal,
+                        shippingCost: (s.total_details && s.total_details.amount_shipping) || 0,
                         currency: s.currency,
                         items: ((s.line_items && s.line_items.data) || []).map((li) => ({ description: li.description, qty: li.quantity, amount: li.amount_total })),
                         config: config,
+                        reorder: reorder,
                         shipping: {
                             name: (sd && sd.name) || cd.name || '',
                             line1: addr.line1 || '', line2: addr.line2 || '',

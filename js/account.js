@@ -1,24 +1,27 @@
 /* ============================================================================
- * account.js - sign in / create account / reset password on /account.html,
- * powered by Supabase Auth (window.sb from supabase-client.js).
+ * account.js - the My Account dashboard on /account.html: sign in / create
+ * account / reset password, profile + default shipping address, order history,
+ * and change email / change password. Powered by Supabase (window.sb).
  * ==========================================================================*/
 (function () {
     'use strict';
     var sb = window.sb;
     var currentEmail = '';
+    var currentUserId = '';
     function el(id) { return document.getElementById(id); }
     function setMsg(id, text, ok) {
         var m = el(id); if (!m) return;
         m.textContent = text || '';
         m.className = 'acct-msg ' + (text ? (ok ? 'ok' : 'err') : '');
     }
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
     if (!sb) {
         setMsg('siMsg', 'Could not reach the sign-in service. Please refresh.', false);
         return;
     }
 
-    // --- which card view is showing ---
+    // --- which view is showing ---
     function show(view) {
         ['authView', 'signedInView', 'resetView'].forEach(function (v) {
             var node = el(v); if (node) node.hidden = (v !== view);
@@ -27,21 +30,57 @@
     function refreshView() {
         return sb.auth.getUser().then(function (res) {
             var user = res && res.data ? res.data.user : null;
-            if (user) { currentEmail = user.email || ''; el('whoEmail').textContent = currentEmail; show('signedInView'); loadMyOrders(); }
-            else { currentEmail = ''; show('authView'); }
+            if (user) {
+                currentEmail = user.email || '';
+                currentUserId = user.id || '';
+                el('whoEmail').textContent = currentEmail;
+                show('signedInView');
+                loadProfile();
+                loadMyOrders();
+            } else {
+                currentEmail = ''; currentUserId = '';
+                show('authView');
+            }
         });
     }
 
-    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    // --- profile: name / phone / default shipping address (Supabase profiles) ---
+    var PROFILE_FIELDS = {
+        pfName: 'full_name', pfPhone: 'phone', pfLine1: 'ship_line1', pfLine2: 'ship_line2',
+        pfCity: 'ship_city', pfState: 'ship_state', pfPostal: 'ship_postal'
+    };
+    function loadProfile() {
+        if (!currentUserId) return;
+        sb.from('profiles')
+            .select('full_name,phone,ship_line1,ship_line2,ship_city,ship_state,ship_postal')
+            .eq('id', currentUserId).maybeSingle()
+            .then(function (res) {
+                var p = (res && res.data) || null;
+                if (!p) return;
+                Object.keys(PROFILE_FIELDS).forEach(function (id) {
+                    var node = el(id), val = p[PROFILE_FIELDS[id]];
+                    if (node && val != null) node.value = val;
+                });
+            })
+            .catch(function () { /* columns not set up yet - leave fields blank */ });
+    }
+    el('profileForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!currentUserId) { setMsg('pfMsg', 'Please sign in again.', false); return; }
+        var btn = el('pfBtn'); btn.disabled = true; btn.textContent = 'Saving…'; setMsg('pfMsg', '');
+        var row = { id: currentUserId };
+        Object.keys(PROFILE_FIELDS).forEach(function (id) { row[PROFILE_FIELDS[id]] = el(id).value.trim(); });
+        Promise.resolve(sb.from('profiles').upsert(row, { onConflict: 'id' })).then(function (res) {
+            if (res && res.error) { setMsg('pfMsg', 'Could not save - the profile table may not be set up yet.', false); }
+            else { setMsg('pfMsg', 'Profile saved.', true); }
+        }).catch(function () { setMsg('pfMsg', 'Something went wrong. Try again.', false); })
+            .finally(function () { btn.disabled = false; btn.textContent = 'Save Profile'; });
+    });
 
     // --- the customer's own order history ---
     function money(cents) { return '$' + ((cents || 0) / 100).toFixed(2); }
-    // The server prefixes the first line item's description with "Order ECO-… · "
-    // (so it shows on the Stripe receipt); strip it here so it doesn't read twice
-    // next to the order number.
+    // Strip the "Order ECO-… · " prefix the server adds to the first line item.
     function cleanDesc(s) { return String(s || '').replace(/^Order\s+ECO-\w+\s*·\s*/i, ''); }
-    // Best build text for a line: the metadata config line (product + gun + options)
-    // when present, otherwise the line item description.
     function lineText(o, i, it) { return (o.config && o.config[i]) ? o.config[i] : cleanDesc(it.description); }
 
     function orderDetail(o) {
@@ -60,7 +99,16 @@
                 (sh.line2 ? esc(sh.line2) + '<br>' : '') +
                 cityLine + '</div>';
         }
-        return lines + ship;
+        var totals = '';
+        if (o.subtotal != null) {
+            var shipLabel = (o.shippingCost === 0) ? 'Free' : money(o.shippingCost);
+            totals = '<div class="ao-totals">' +
+                '<div class="ao-line"><span>Subtotal</span><span class="ao-amt">' + money(o.subtotal) + '</span></div>' +
+                '<div class="ao-line"><span>Shipping</span><span class="ao-amt">' + shipLabel + '</span></div>' +
+                '<div class="ao-line ao-tot"><span>Total</span><span class="ao-amt">' + money(o.amount_total) + '</span></div>' +
+                '</div>';
+        }
+        return lines + totals + ship;
     }
 
     function loadMyOrders() {
@@ -75,10 +123,10 @@
         }).then(function (d) {
             var orders = (d && d.orders) || [];
             if (!orders.length) {
-                box.innerHTML = '<h3>Your Orders</h3><div class="acct-orders-empty">No orders yet. When you place an order it will show up here.</div>';
+                box.innerHTML = '<div class="acct-orders-empty">No orders yet. <a href="shop.html">Start shopping</a> and your orders will show up here.</div>';
                 return;
             }
-            box.innerHTML = '<h3>Your Orders</h3>' + orders.map(function (o) {
+            box.innerHTML = orders.map(function (o) {
                 var date = new Date(o.created * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
                 var summary = (o.items || []).map(function (it, i) {
                     return (it.qty > 1 ? it.qty + '× ' : '') + esc(lineText(o, i, it));
@@ -86,25 +134,41 @@
                 return '<div class="acct-order">' +
                     '<div class="ao-head" role="button" tabindex="0">' +
                       '<div class="ao-top"><span class="ao-no">' + esc(o.orderNo || '') + '</span><span class="ao-total">' + money(o.amount_total) + '</span></div>' +
-                      '<div class="ao-date">' + date + ' <span class="ao-chev">&#9662;</span></div>' +
+                      '<div class="ao-meta"><span class="ao-date">' + date + '</span><span class="ao-status">In production</span><span class="ao-chev">&#9662;</span></div>' +
                       '<div class="ao-items">' + summary + '</div>' +
                     '</div>' +
                     '<div class="ao-detail" hidden>' + orderDetail(o) + '</div>' +
+                    ((o.reorder && o.reorder.length) ? '<div class="ao-actions"><button class="ao-reorder" data-ro="' + encodeURIComponent(JSON.stringify(o.reorder)) + '">Reorder</button></div>' : '') +
                   '</div>';
             }).join('');
         }).catch(function () {
-            box.innerHTML = '<h3>Your Orders</h3><div class="acct-orders-empty">Could not load your orders right now.</div>';
+            box.innerHTML = '<div class="acct-orders-empty">Could not load your orders right now.</div>';
         });
     }
 
-    // Expand/collapse an order to reveal its detail (delegated, so it survives reloads).
+    // Expand/collapse an order (delegated, survives reloads).
     function toggleOrder(head) {
         var card = head.parentNode;
         var det = card.querySelector('.ao-detail');
         var open = card.classList.toggle('open');
         if (det) det.hidden = !open;
     }
+    // Reorder: rebuild the cart from the order's snapshot (carried on the button), then open the drawer.
+    function doReorder(btn) {
+        if (!window.Cart) return;
+        var items;
+        try { items = JSON.parse(decodeURIComponent(btn.getAttribute('data-ro') || '')); }
+        catch (e) { return; }
+        if (!Array.isArray(items) || !items.length) return;
+        items.forEach(function (it) {
+            window.Cart.add({ id: it.id, name: it.name || '', options: it.options || [], gun: it.gun || '', washerColor: it.washerColor || '', summary: it.summary || '', unit: it.unit || 0, qty: it.qty || 1 });
+        });
+        btn.textContent = 'Added to cart';
+        window.Cart.open();
+    }
     el('myOrders').addEventListener('click', function (e) {
+        var ro = e.target.closest('.ao-reorder');
+        if (ro) { e.preventDefault(); doReorder(ro); return; }
         var head = e.target.closest('.ao-head');
         if (head) toggleOrder(head);
     });
@@ -112,6 +176,15 @@
         if (e.key !== 'Enter' && e.key !== ' ') return;
         var head = e.target.closest('.ao-head');
         if (head) { e.preventDefault(); toggleOrder(head); }
+    });
+
+    // --- dashboard left-nav: show the clicked panel, highlight its nav item ---
+    document.querySelectorAll('.acct-nav-item[data-panel]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var panel = btn.getAttribute('data-panel');
+            document.querySelectorAll('.acct-nav-item[data-panel]').forEach(function (b) { b.classList.toggle('active', b === btn); });
+            document.querySelectorAll('.acct-panel').forEach(function (p) { p.classList.toggle('active', p.getAttribute('data-panel') === panel); });
+        });
     });
 
     // --- tab switching (Sign In / Create Account) ---
@@ -177,15 +250,7 @@
             .finally(function () { btn.disabled = false; btn.textContent = 'Update Password'; });
     });
 
-    // --- account settings: reveal/hide ---
-    el('settingsToggle').addEventListener('click', function () {
-        var open = el('settings').classList.toggle('open');
-        el('settingsBody').hidden = !open;
-        el('settingsToggle').setAttribute('aria-expanded', open ? 'true' : 'false');
-    });
-
-    // Confirm the customer's identity before a sensitive change by re-signing in
-    // with the password they typed. Resolves true on success, sets msg + false on fail.
+    // Confirm identity before a sensitive change by re-signing in with the typed password.
     function reauth(password, msgId) {
         if (!currentEmail) { setMsg(msgId, 'Please sign in again.', false); return Promise.resolve(false); }
         return sb.auth.signInWithPassword({ email: currentEmail, password: password }).then(function (res) {
