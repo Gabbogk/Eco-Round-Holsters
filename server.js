@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const catalog = require('./catalog');
+const mailer = require('./mailer');
 
 const PORT = process.env.PORT || 3000;
 
@@ -32,6 +33,12 @@ const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVlX-ENTRfwyya
 // set, the checkout endpoint returns a friendly "not configured yet" response.
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
 const STRIPE_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
+// Stripe webhook signing secret (whsec_...). When set (with SMTP creds), a paid
+// checkout triggers a branded order-confirmation email. Unset = the webhook is a
+// safe no-op, so deploying this can't affect the live site until you configure it.
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+// Optional: BCC the owner on every confirmation (a free "new order" copy).
+const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
 
 // --- Admin auth -----------------------------------------------------------
 // Secure mode turns on when ADMIN_PASSWORD is set: the dashboard logs in against
@@ -611,6 +618,107 @@ function handleSignupsApi(req, res) {
     });
 }
 
+// --- Stripe webhook: branded order-confirmation email ---------------------
+// Read the RAW request body (signature verification needs the exact bytes).
+function readRawBody(req, cb) {
+    let body = '';
+    req.on('data', (c) => { body += c; if (body.length > 1000000) req.destroy(); });
+    req.on('end', () => cb(null, body));
+    req.on('error', (e) => cb(e));
+}
+
+// Verify the Stripe-Signature header (HMAC-SHA256 of "t.payload" with the
+// webhook secret), with a 5-minute timestamp tolerance to block replays.
+function verifyStripeSignature(rawBody, header) {
+    if (!STRIPE_WEBHOOK_SECRET || !header) return false;
+    let t = ''; const v1 = [];
+    String(header).split(',').forEach((kv) => {
+        const i = kv.indexOf('=');
+        if (i < 0) return;
+        const k = kv.slice(0, i).trim(), val = kv.slice(i + 1).trim();
+        if (k === 't') t = val; else if (k === 'v1') v1.push(val);
+    });
+    const ts = parseInt(t, 10);
+    if (!ts || !v1.length || Math.abs(Date.now() / 1000 - ts) > 300) return false;
+    const expected = crypto.createHmac('sha256', STRIPE_WEBHOOK_SECRET).update(t + '.' + rawBody, 'utf8').digest('hex');
+    return v1.some((v) => {
+        try { return v.length === expected.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(expected)); }
+        catch (e) { return false; }
+    });
+}
+
+// Strip the "Order ECO-… · " prefix the checkout adds to the first line item's
+// description, so the email build text doesn't repeat the order number.
+function stripOrderPrefix(s) { return String(s || '').replace(/^Order\s+ECO-\w+\s*·\s*/i, ''); }
+
+const emailedSessions = new Set(); // best-effort in-memory dedupe (resets on restart)
+
+// POST /api/stripe-webhook - on checkout.session.completed, email the customer a
+// branded confirmation. Acknowledges Stripe immediately, then sends async (the
+// order is already safely recorded in Stripe + the admin dashboard, so a missed
+// email is non-fatal). No-op until STRIPE_WEBHOOK_SECRET + SMTP creds are set.
+function handleStripeWebhook(req, res) {
+    if (!STRIPE_WEBHOOK_SECRET || !mailer.mailerReady() || !STRIPE_SECRET_KEY) {
+        return sendJson(res, 200, { ok: true, skipped: 'not_configured' });
+    }
+    readRawBody(req, (err, raw) => {
+        if (err) return sendJson(res, 400, { error: 'bad_request' });
+        if (!verifyStripeSignature(raw, req.headers['stripe-signature'])) {
+            return sendJson(res, 400, { error: 'bad_signature' });
+        }
+        let event;
+        try { event = JSON.parse(raw); } catch (e) { return sendJson(res, 400, { error: 'bad_json' }); }
+        sendJson(res, 200, { received: true }); // ack fast; do the work after
+        if (event.type !== 'checkout.session.completed') return;
+        const session = event.data && event.data.object;
+        if (!session || (session.payment_status !== 'paid' && session.payment_status !== 'no_payment_required')) return;
+        if (emailedSessions.has(session.id)) return;
+        emailedSessions.add(session.id);
+        sendOrderConfirmation(session.id).catch((e) => {
+            emailedSessions.delete(session.id); // let a Stripe retry try again
+            console.error('[webhook] order email failed:', e && e.message);
+        });
+    });
+}
+
+// Fetch the full session (with line items), shape it, and send the email.
+function sendOrderConfirmation(sessionId) {
+    const url = STRIPE_SESSIONS_URL + '/' + encodeURIComponent(sessionId) + '?expand[]=line_items';
+    return stripeGet(url).then((r) => {
+        if (r.status >= 300 || !r.json) throw new Error('stripe_fetch_' + r.status);
+        const s = r.json;
+        const meta = s.metadata || {};
+        const cd = s.customer_details || {};
+        const email = ((cd.email || s.customer_email) || '').trim();
+        if (!email) throw new Error('no_customer_email');
+        const sd = s.shipping_details || s.shipping || (s.collected_information && s.collected_information.shipping_details) || null;
+        const addr = (sd && sd.address) || cd.address || {};
+        const config = [];
+        for (let i = 0; i < 50; i++) { if (meta['item_' + i]) config.push(meta['item_' + i]); else break; }
+        const liData = (s.line_items && s.line_items.data) || [];
+        const items = liData.map((li, i) => ({ text: config[i] || stripOrderPrefix(li.description), qty: li.quantity, amount: li.amount_total }));
+        const custom = config.some((c) => /custom graphic/i.test(c)) || items.some((it) => /custom graphic/i.test(it.text || ''));
+        const order = {
+            orderNo: meta.order_no || orderNumber(s.id),
+            email: email,
+            items: items,
+            shipping: {
+                name: (sd && sd.name) || cd.name || '',
+                line1: addr.line1 || '', line2: addr.line2 || '',
+                city: addr.city || '', state: addr.state || '',
+                postal_code: addr.postal_code || '', country: addr.country || ''
+            },
+            subtotal: s.amount_subtotal,
+            shippingCost: (s.total_details && s.total_details.amount_shipping) || 0,
+            total: s.amount_total,
+            custom: custom
+        };
+        const mail = mailer.renderOrderEmail(order);
+        return mailer.sendMail({ to: email, bcc: OWNER_EMAIL, subject: mail.subject, html: mail.html, replyTo: 'info@ecoroundholsters.com' })
+            .then(() => console.log('[webhook] order email sent for ' + order.orderNo + ' to ' + email));
+    });
+}
+
 const server = http.createServer((req, res) => {
     const urlPath = req.url.split('?')[0];
 
@@ -618,6 +726,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && urlPath === '/api/signup') return handleSignupSubmit(req, res);
     if (req.method === 'POST' && urlPath === '/api/signups') return handleSignupsApi(req, res);
     if (req.method === 'POST' && urlPath === '/api/checkout') return handleCheckout(req, res);
+    if (req.method === 'POST' && urlPath === '/api/stripe-webhook') return handleStripeWebhook(req, res);
     if (req.method === 'GET' && urlPath === '/api/order') return handleOrder(req, res);
     if (req.method === 'GET' && urlPath === '/api/catalog') return handleCatalog(req, res);
     if (req.method === 'POST' && urlPath === '/api/orders') return handleOrders(req, res);

@@ -3,5 +3,6 @@ node_modules/
 Thumbs.db
 .claude/
 progress.md
+EMAIL-SETUP.md
 .env
 .env.local
