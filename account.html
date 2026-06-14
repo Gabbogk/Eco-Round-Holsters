@@ -11,34 +11,34 @@
     <link rel="stylesheet" href="css/styles.css">
     <style>
         .acct-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px;
-            background: radial-gradient(circle at 50% -10%, rgba(74,124,89,.18), transparent 55%), linear-gradient(135deg, #141414 0%, #1d271f 50%, #141414 100%); }
+            background: radial-gradient(circle at 50% -10%, rgba(248,208,0,.18), transparent 55%), linear-gradient(135deg, #141414 0%, #201c10 50%, #141414 100%); }
         .acct-logo { transform: scale(1.2); margin-bottom: 28px; }
         .acct-card { width: 100%; max-width: 400px; background: var(--color-bg-card, #1c1c1c); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 30px 28px; }
         .acct-tabs { display: flex; gap: 6px; margin-bottom: 22px; background: rgba(0,0,0,.25); border-radius: 10px; padding: 4px; }
         .acct-tab { flex: 1; text-align: center; padding: 9px; border-radius: 7px; font-family: var(--font-heading); font-size: .8rem; letter-spacing: 1px; text-transform: uppercase; color: var(--color-text-dim, #999); cursor: pointer; border: none; background: transparent; }
-        .acct-tab.active { background: var(--color-primary, #4a7c59); color: #fff; }
+        .acct-tab.active { background: var(--color-primary, #f8d000); color: #1a1a1a; }
         .acct-form { display: none; }
         .acct-form.active { display: block; }
         .acct-card label { display: block; font-size: .78rem; color: var(--color-text-dim, #aaa); margin: 0 0 5px; }
         .acct-card input { width: 100%; padding: 11px 13px; margin-bottom: 15px; background: #141414; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; color: #fff; font-size: .95rem; box-sizing: border-box; }
-        .acct-card input:focus { outline: none; border-color: var(--color-primary, #4a7c59); }
-        .acct-btn { width: 100%; padding: 12px; background: var(--color-primary, #4a7c59); color: #fff; border: none; border-radius: 8px; font-family: var(--font-heading); letter-spacing: 1px; text-transform: uppercase; font-size: .85rem; cursor: pointer; }
-        .acct-btn:hover { background: var(--color-primary-hover, #5a9469); }
+        .acct-card input:focus { outline: none; border-color: var(--color-primary, #f8d000); }
+        .acct-btn { width: 100%; padding: 12px; background: var(--color-primary, #f8d000); color: #1a1a1a; border: none; border-radius: 8px; font-family: var(--font-heading); letter-spacing: 1px; text-transform: uppercase; font-size: .85rem; cursor: pointer; }
+        .acct-btn:hover { background: var(--color-primary-hover, #ffdd33); }
         .acct-btn:disabled { opacity: .6; cursor: default; }
         .acct-msg { font-size: .82rem; margin: 4px 0 12px; min-height: 18px; line-height: 1.4; }
         .acct-msg.err { color: #e08585; }
-        .acct-msg.ok { color: var(--color-primary-hover, #6cae7e); }
+        .acct-msg.ok { color: var(--color-primary-hover, #f8d000); }
         .acct-alt { text-align: center; font-size: .8rem; margin-top: 14px; color: var(--color-text-dim, #999); }
-        .acct-alt a { color: var(--color-primary-hover, #6cae7e); cursor: pointer; }
+        .acct-alt a { color: var(--color-primary-hover, #f8d000); cursor: pointer; }
         .acct-foot { margin-top: 22px; text-align: center; }
         .acct-foot a { color: var(--color-text-dim, #888); font-size: .8rem; }
         .acct-signedin { text-align: center; }
-        .acct-signedin .who { color: var(--color-primary-hover, #6cae7e); font-weight: 600; }
+        .acct-signedin .who { color: var(--color-primary-hover, #f8d000); font-weight: 600; }
         .acct-orders { text-align: left; margin: 18px 0 4px; }
         .acct-orders h3 { font-family: var(--font-heading); font-size: .8rem; letter-spacing: 1px; text-transform: uppercase; color: var(--color-text-dim, #999); margin: 0 0 10px; }
         .acct-order { background: #141414; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 11px 13px; margin-bottom: 9px; }
         .acct-order .ao-top { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 3px; }
-        .acct-order .ao-no { font-family: var(--font-heading); color: var(--color-primary-hover, #6cae7e); letter-spacing: .5px; font-size: .84rem; }
+        .acct-order .ao-no { font-family: var(--font-heading); color: var(--color-primary-hover, #f8d000); letter-spacing: .5px; font-size: .84rem; }
         .acct-order .ao-total { font-weight: 600; font-size: .86rem; }
         .acct-order .ao-date { color: var(--color-text-dim, #888); font-size: .74rem; margin-bottom: 3px; }
         .acct-order .ao-items { color: var(--color-text-muted, #bbb); font-size: .78rem; line-height: 1.5; }

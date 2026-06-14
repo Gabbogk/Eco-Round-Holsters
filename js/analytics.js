@@ -61,13 +61,13 @@
         style.textContent =
             '#eco-consent{position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;box-shadow:0 12px 40px rgba(0,0,0,.45);font-family:Inter,system-ui,sans-serif;}' +
             '#eco-consent p{color:#cfcfcf;font-size:.86rem;line-height:1.5;margin:0;flex:1;min-width:240px;}' +
-            '#eco-consent a{color:#5a9469;text-decoration:underline;}' +
+            '#eco-consent a{color:#ffdd33;text-decoration:underline;}' +
             '#eco-consent .ecc-btns{display:flex;gap:10px;flex-shrink:0;}' +
             '#eco-consent button{font-family:Oswald,sans-serif;font-size:.78rem;letter-spacing:.5px;text-transform:uppercase;padding:9px 18px;border-radius:8px;cursor:pointer;border:1px solid #2a2a2a;transition:all .15s;}' +
-            '#eco-consent .ecc-accept{background:#4a7c59;color:#fff;border-color:#4a7c59;}' +
-            '#eco-consent .ecc-accept:hover{background:#5a9469;}' +
+            '#eco-consent .ecc-accept{background:#f8d000;color:#1a1a1a;border-color:#f8d000;}' +
+            '#eco-consent .ecc-accept:hover{background:#ffdd33;}' +
             '#eco-consent .ecc-decline{background:transparent;color:#999;}' +
-            '#eco-consent .ecc-decline:hover{color:#fff;border-color:#4a7c59;}';
+            '#eco-consent .ecc-decline:hover{color:#fff;border-color:#f8d000;}';
         document.head.appendChild(style);
 
         var bar = document.createElement('div');

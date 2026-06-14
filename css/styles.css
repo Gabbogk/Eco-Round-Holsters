@@ -12,13 +12,14 @@
     --color-text: #f0f0f0;
     --color-text-muted: #999;
     --color-text-dim: #666;
-    --color-primary: #4a7c59;
-    --color-primary-hover: #5a9469;
-    --color-primary-dark: #3a6247;
+    --color-primary: #f8d000;
+    --color-primary-hover: #ffdd33;
+    --color-primary-dark: #d4b200;
+    --color-on-primary: #1a1a1a;
     --color-accent: #c8a96e;
     --color-accent-hover: #d4b87a;
     --color-danger: #c0392b;
-    --color-success: #4a7c59;
+    --color-success: #f8d000;
     --color-star: #f4c430;
     --font-heading: 'Oswald', sans-serif;
     --font-body: 'Inter', sans-serif;
@@ -111,7 +112,7 @@ ul {
 
 .btn-primary {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     border-color: var(--color-primary);
 }
 
@@ -119,7 +120,7 @@ ul {
     background: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(74, 124, 89, 0.4);
+    box-shadow: 0 4px 15px rgba(248, 208, 0, 0.4);
 }
 
 .btn-outline {
@@ -151,7 +152,7 @@ ul {
 }
 
 .promo-bar p {
-    color: #fff;
+    color: var(--color-on-primary);
 }
 
 /* ========== Header ========== */
@@ -310,7 +311,7 @@ ul {
     top: 2px;
     right: 2px;
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     font-size: 0.65rem;
     font-weight: 700;
     width: 18px;
@@ -391,7 +392,7 @@ ul {
 .hero-badge {
     display: inline-block;
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     padding: 6px 16px;
     font-family: var(--font-heading);
     font-size: 0.8rem;
@@ -505,7 +506,7 @@ ul {
 .category-card:hover {
     transform: translateY(-6px);
     border-color: var(--color-primary);
-    box-shadow: 0 12px 40px rgba(74, 124, 89, 0.15);
+    box-shadow: 0 12px 40px rgba(248, 208, 0, 0.15);
 }
 
 .category-img {
@@ -558,7 +559,7 @@ ul {
 .product-card:hover {
     transform: translateY(-6px);
     border-color: var(--color-primary);
-    box-shadow: 0 12px 40px rgba(74, 124, 89, 0.12);
+    box-shadow: 0 12px 40px rgba(248, 208, 0, 0.12);
 }
 
 .product-badge {
@@ -578,7 +579,7 @@ ul {
 
 .product-badge.new {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
 }
 
 .product-img {
@@ -1148,7 +1149,7 @@ ul {
     background: var(--color-primary);
     border: none;
     border-radius: var(--radius);
-    color: #fff;
+    color: var(--color-on-primary);
     cursor: pointer;
     transition: var(--transition);
 }
@@ -1563,7 +1564,7 @@ ul {
     letter-spacing: 1.5px;
     text-transform: uppercase;
     background: var(--color-primary);
-    color: #fff;
+    color: var(--color-on-primary);
     border: none;
     border-radius: var(--radius);
     cursor: pointer;

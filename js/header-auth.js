@@ -26,7 +26,7 @@
         st.textContent =
             '.acct-nav{display:inline-flex;align-items:center;gap:14px;margin-right:16px;}' +
             '.acct-link{color:#e8e8e8;font-family:inherit;font-size:.82rem;letter-spacing:.3px;text-decoration:none;white-space:nowrap;font-weight:500;cursor:pointer;}' +
-            '.acct-link:hover{color:var(--color-primary-hover,#6cae7e);}' +
+            '.acct-link:hover{color:var(--color-primary-hover,#ffdd33);}' +
             '.acct-link.admin{color:var(--color-accent,#c8a96e);}';
         document.head.appendChild(st);
     }
