@@ -203,4 +203,33 @@ function renderOrderEmail(order) {
     return { subject: 'Order ' + (o.orderNo || '') + ' confirmed - EcoRound Holsters', html: html };
 }
 
-module.exports = { sendMail: sendMail, mailerReady: mailerReady, renderOrderEmail: renderOrderEmail };
+// --- "your order shipped" email (lighter than the order confirmation) ---
+function renderShippedEmail(o) {
+    const oo = o || {};
+    const linkGold = '#9a7b00', dark = '#1a1a1a', ink = '#2b2b2b', muted = '#777', gold = '#f8d000';
+    const trackBtn = oo.trackingUrl
+        ? '<table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="padding:20px 0 2px;"><a href="' + oo.trackingUrl + '" style="display:inline-block;background:' + gold + ';color:#1a1a1a;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:14px;letter-spacing:.5px;padding:12px 24px;border-radius:8px;">Track your package</a></td></tr></table>'
+        : '';
+    const html =
+'<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+'<body style="margin:0;padding:0;background:#f4f4f4;">' +
+'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:24px 12px;"><tr><td align="center">' +
+  '<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">' +
+    '<tr><td style="background:' + dark + ';padding:26px 28px;text-align:center;">' +
+      '<div style="font-size:24px;font-weight:bold;letter-spacing:3px;"><span style="color:' + gold + ';">ECO</span><span style="color:#ffffff;">ROUND</span></div>' +
+      '<div style="font-size:10px;letter-spacing:4px;color:#b8b8b8;margin-top:3px;">HOLSTERS</div>' +
+    '</td></tr>' +
+    '<tr><td style="padding:30px 28px;">' +
+      '<h1 style="margin:0 0 6px;font-size:21px;color:' + ink + ';">Your order is on its way</h1>' +
+      '<p style="margin:0 0 18px;font-size:14px;color:' + muted + ';line-height:1.6;">Good news - order <strong style="color:' + ink + ';">' + esc(oo.orderNo || '') + '</strong> has shipped.</p>' +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fdf7da;border-radius:8px;"><tr><td style="padding:14px 16px;font-size:14px;color:' + ink + ';line-height:1.6;">Carrier: <strong>' + esc(oo.carrier || '') + '</strong><br>Tracking number: <strong>' + esc(oo.tracking || '') + '</strong></td></tr></table>' +
+      trackBtn +
+      '<p style="margin:18px 0 0;font-size:13px;color:' + muted + ';line-height:1.6;">Questions? Just reply to this email or reach us at <a href="mailto:info@ecoroundholsters.com" style="color:' + linkGold + ';">info@ecoroundholsters.com</a>.</p>' +
+    '</td></tr>' +
+    '<tr><td style="padding:0 28px 28px;"><hr style="border:none;border-top:1px solid #eee;margin:0 0 14px;"><p style="margin:0;font-size:11px;color:#aaa;line-height:1.6;">EcoRound Holsters &middot; <a href="https://www.ecoroundholsters.com" style="color:#aaa;">ecoroundholsters.com</a></p></td></tr>' +
+  '</table>' +
+'</td></tr></table></body></html>';
+    return { subject: 'Your EcoRound order ' + (oo.orderNo || '') + ' has shipped', html: html };
+}
+
+module.exports = { sendMail: sendMail, mailerReady: mailerReady, renderOrderEmail: renderOrderEmail, renderShippedEmail: renderShippedEmail };

@@ -250,6 +250,8 @@
         if (exp) exp.addEventListener('click', ordersExportCsv);
         var tbody = document.getElementById('ordersTbody');
         if (tbody) tbody.addEventListener('click', function (e) {
+            var msb = e.target.closest('.mark-shipped-btn');
+            if (msb) { e.stopPropagation(); markShipped(msb); return; }
             var row = e.target.closest('.order-row');
             if (!row) return;
             var i = row.getAttribute('data-row');
@@ -287,7 +289,7 @@
             : body + ' · Washers: ' + color;
     }
 
-    function renderOrderDetail(o) {
+    function renderOrderDetail(o, i) {
         var sh = o.shipping || {};
         var addr = fmtAddr(sh);
         var ship = '<div class="od-block"><div class="od-h">Ship to</div><div>' +
@@ -306,7 +308,60 @@
         var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
         var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
         var ref = '<div class="od-ref"><span class="od-ordno">' + esc(o.orderNo || '') + '</span> &middot; ' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
-        return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' + customNote + ref;
+        return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' +
+            '<div class="od-block od-fulfill" data-ff="' + i + '">' + buildFulfill(o, i) + '</div>' + customNote + ref;
+    }
+
+    // The mark-shipped control (or current shipped status) for an order's detail view.
+    function buildFulfill(o, i) {
+        var ff = o.fulfillment || {};
+        var shipped = ff.status === 'shipped';
+        var opts = ['USPS', 'UPS', 'FedEx', 'Other'].map(function (c) {
+            return '<option' + (ff.carrier === c ? ' selected' : '') + '>' + c + '</option>';
+        }).join('');
+        var status = shipped
+            ? '<div class="ship-status">&#10003; Shipped via <strong>' + esc(ff.carrier || '') + '</strong> &middot; ' +
+                (ff.trackingUrl ? '<a href="' + esc(ff.trackingUrl) + '" target="_blank" rel="noopener">' + esc(ff.tracking || '') + '</a>' : esc(ff.tracking || '')) + '</div>'
+            : '<div class="ship-status">In production - not shipped yet.</div>';
+        return '<div class="od-h">Fulfillment</div>' + status +
+            '<div class="ship-form">' +
+              '<select class="ship-carrier">' + opts + '</select>' +
+              '<input class="ship-tracking" type="text" placeholder="Tracking number" value="' + esc(ff.tracking || '') + '">' +
+              '<button class="btn-ghost mark-shipped-btn" data-sid="' + esc(o.id) + '" data-row="' + i + '">' + (shipped ? 'Update tracking' : 'Mark as shipped') + '</button>' +
+              '<span class="ship-msg"></span>' +
+            '</div>';
+    }
+
+    // POST the carrier + tracking to the server, email the customer, update the row in place.
+    function markShipped(btn) {
+        var idx = parseInt(btn.getAttribute('data-row'), 10);
+        var sid = btn.getAttribute('data-sid');
+        var wrap = btn.closest('.od-fulfill');
+        if (!wrap) return;
+        var carrier = wrap.querySelector('.ship-carrier').value;
+        var tracking = wrap.querySelector('.ship-tracking').value.trim();
+        var msg = wrap.querySelector('.ship-msg');
+        if (!tracking) { msg.textContent = 'Enter a tracking number.'; msg.className = 'ship-msg err'; return; }
+        var label = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent = ''; msg.className = 'ship-msg';
+        fetch('/api/mark-shipped', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sbToken: adminToken, sessionId: sid, carrier: carrier, tracking: tracking })
+        }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+            .then(function (res) {
+                if (res.status === 200 && res.j && res.j.ok) {
+                    if (state.orders[idx]) state.orders[idx].fulfillment = res.j.fulfillment;
+                    wrap.innerHTML = buildFulfill(state.orders[idx], idx);
+                    var m2 = wrap.querySelector('.ship-msg');
+                    if (m2) { m2.textContent = '✓ Saved - customer notified by email.'; m2.className = 'ship-msg ok'; }
+                } else {
+                    msg.textContent = (res.j && res.j.message) || 'Could not save. Try again.'; msg.className = 'ship-msg err';
+                    btn.disabled = false; btn.textContent = label;
+                }
+            }).catch(function () {
+                msg.textContent = 'Network error - try again.'; msg.className = 'ship-msg err';
+                btn.disabled = false; btn.textContent = label;
+            });
     }
 
     function renderOrderRows() {
@@ -324,7 +379,7 @@
                 '<td class="order-items">' + items + badge + '</td>' +
                 '<td class="order-total">' + fmtMoney(o.amount_total) + '</td>' +
                 '<td class="order-caret" aria-hidden="true">▾</td></tr>' +
-                '<tr class="order-detail-row" data-detail="' + i + '" hidden><td colspan="6">' + renderOrderDetail(o) + '</td></tr>';
+                '<tr class="order-detail-row" data-detail="' + i + '" hidden><td colspan="6">' + renderOrderDetail(o, i) + '</td></tr>';
         }).join('');
         tbody.innerHTML = html || '<tr class="empty-row"><td colspan="6">No matching orders.</td></tr>';
     }

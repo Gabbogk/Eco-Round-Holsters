@@ -108,7 +108,13 @@
                 '<div class="ao-line ao-tot"><span>Total</span><span class="ao-amt">' + money(o.amount_total) + '</span></div>' +
                 '</div>';
         }
-        return lines + totals + ship;
+        var ff = o.fulfillment || {};
+        var track = '';
+        if (ff.status === 'shipped') {
+            var t = ff.trackingUrl ? '<a href="' + ff.trackingUrl + '" target="_blank" rel="noopener">' + esc(ff.tracking || '') + '</a>' : esc(ff.tracking || '');
+            track = '<div class="ao-track"><b>Shipped</b>' + esc(ff.carrier || '') + (ff.tracking ? ' &middot; ' + t : '') + '</div>';
+        }
+        return lines + totals + ship + track;
     }
 
     function loadMyOrders() {
@@ -131,10 +137,11 @@
                 var summary = (o.items || []).map(function (it, i) {
                     return (it.qty > 1 ? it.qty + '× ' : '') + esc(lineText(o, i, it));
                 }).join(', ');
+                var shipped = o.fulfillment && o.fulfillment.status === 'shipped';
                 return '<div class="acct-order">' +
                     '<div class="ao-head" role="button" tabindex="0">' +
                       '<div class="ao-top"><span class="ao-no">' + esc(o.orderNo || '') + '</span><span class="ao-total">' + money(o.amount_total) + '</span></div>' +
-                      '<div class="ao-meta"><span class="ao-date">' + date + '</span><span class="ao-status">In production</span><span class="ao-chev">&#9662;</span></div>' +
+                      '<div class="ao-meta"><span class="ao-date">' + date + '</span><span class="ao-status' + (shipped ? ' shipped' : '') + '">' + (shipped ? 'Shipped' : 'In production') + '</span><span class="ao-chev">&#9662;</span></div>' +
                       '<div class="ao-items">' + summary + '</div>' +
                     '</div>' +
                     '<div class="ao-detail" hidden>' + orderDetail(o) + '</div>' +

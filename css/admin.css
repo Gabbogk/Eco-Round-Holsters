@@ -128,6 +128,18 @@ a { color: inherit; text-decoration: none; }
 }
 .btn-ghost:hover { background: var(--a-card-hover); color: var(--a-text); border-color: var(--a-primary); }
 
+/* order fulfillment (mark-shipped) */
+.od-fulfill { margin-top: 14px; }
+.ship-status { font-size: .82rem; margin: 4px 0 10px; color: var(--a-muted); }
+.ship-status strong { color: var(--a-text); }
+.ship-status a { color: var(--a-primary-hover); }
+.ship-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ship-form select, .ship-form input { padding: 8px 10px; background: var(--a-bg); border: 1px solid var(--a-border); border-radius: 6px; color: var(--a-text); font-size: .85rem; }
+.ship-form input.ship-tracking { flex: 1; min-width: 160px; }
+.ship-msg { font-size: .8rem; }
+.ship-msg.ok { color: var(--a-primary-hover); }
+.ship-msg.err { color: #e08585; }
+
 /* ===== App shell ===== */
 .app { display: none; min-height: 100vh; }
 .app.active { display: grid; grid-template-columns: var(--a-sidebar) 1fr; }

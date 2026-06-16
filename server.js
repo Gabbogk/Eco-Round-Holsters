@@ -486,6 +486,33 @@ function handleCatalog(req, res) {
     sendJson(res, 200, { ok: true, products: products, freeShippingThreshold: catalog.FREE_SHIPPING_THRESHOLD, flatShipping: catalog.SHIPPING_FLAT });
 }
 
+// Map a carrier + tracking number to a public tracking URL ('' if unknown carrier).
+function trackingUrl(carrier, num) {
+    const n = encodeURIComponent(String(num || '').trim());
+    if (!n) return '';
+    switch (String(carrier || '').toUpperCase()) {
+        case 'USPS': return 'https://tools.usps.com/go/TrackConfirmAction?tLabels=' + n;
+        case 'UPS': return 'https://www.ups.com/track?tracknum=' + n;
+        case 'FEDEX': return 'https://www.fedex.com/fedextrack/?trknbr=' + n;
+        default: return '';
+    }
+}
+
+// Read fulfillment state stashed on a session's PaymentIntent metadata (set by
+// /api/mark-shipped). Needs the session fetched with payment_intent expanded.
+// Defaults to "in_production" for any order not yet marked shipped.
+function fulfillmentOf(s) {
+    const pi = (s && s.payment_intent && typeof s.payment_intent === 'object') ? s.payment_intent : null;
+    const m = (pi && pi.metadata) ? pi.metadata : {};
+    const status = m.fulfillment_status === 'shipped' ? 'shipped' : 'in_production';
+    const carrier = m.carrier || '', tracking = m.tracking || '';
+    return {
+        status: status, carrier: carrier, tracking: tracking,
+        trackingUrl: status === 'shipped' ? trackingUrl(carrier, tracking) : '',
+        shippedAt: m.shipped_at ? parseInt(m.shipped_at, 10) : 0
+    };
+}
+
 // POST /api/orders { key } -> recent PAID Stripe orders, for the admin dashboard.
 // Auth: the admin password (validated via Apps Script, same as login). Returns
 // 503 until the Stripe key is set, so the dashboard can show a setup state.
@@ -497,7 +524,7 @@ function handleOrders(req, res) {
         if (err) return sendJson(res, 400, { error: 'bad_request' });
         authorizeAdmin(data).then((okAuth) => {
             if (!okAuth) return sendJson(res, 401, { error: 'unauthorized' });
-            const url = 'https://api.stripe.com/v1/checkout/sessions?limit=25&expand[]=data.line_items';
+            const url = 'https://api.stripe.com/v1/checkout/sessions?limit=25&expand[]=data.line_items&expand[]=data.payment_intent';
             return stripeGet(url).then((r) => {
                 if (r.status >= 300) {
                     const msg = (r.json && r.json.error && r.json.error.message) || 'stripe_error';
@@ -534,7 +561,8 @@ function handleOrders(req, res) {
                             },
                             items: items,
                             config: config,
-                            custom: custom
+                            custom: custom,
+                            fulfillment: fulfillmentOf(s)
                         };
                     });
                 sendJson(res, 200, { ok: true, orders: orders });
@@ -553,7 +581,7 @@ function handleMyOrders(req, res) {
         supabaseGet('/auth/v1/user', data && data.sbToken).then((user) => {
             const email = (user && user.email) ? String(user.email).toLowerCase() : '';
             if (!email) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
-            const url = 'https://api.stripe.com/v1/checkout/sessions?limit=100&expand[]=data.line_items';
+            const url = 'https://api.stripe.com/v1/checkout/sessions?limit=100&expand[]=data.line_items&expand[]=data.payment_intent';
             return stripeGet(url).then((r) => {
                 if (r.status >= 300) return sendJson(res, 502, { ok: false, error: 'stripe_error' });
                 const orders = (r.json.data || []).filter((s) => {
@@ -589,12 +617,54 @@ function handleMyOrders(req, res) {
                             line1: addr.line1 || '', line2: addr.line2 || '',
                             city: addr.city || '', state: addr.state || '',
                             postal_code: addr.postal_code || '', country: addr.country || ''
-                        }
+                        },
+                        fulfillment: fulfillmentOf(s)
                     };
                 });
                 sendJson(res, 200, { ok: true, orders: orders });
             });
         }).catch(() => sendJson(res, 502, { ok: false, error: 'upstream_error' }));
+    });
+}
+
+// POST /api/mark-shipped { sbToken, sessionId, carrier, tracking } -> admin marks an
+// order shipped: stamps fulfillment + tracking on the order's PaymentIntent metadata
+// (no DB) and emails the customer. Admin-gated (Supabase admin token).
+function handleMarkShipped(req, res) {
+    if (!STRIPE_SECRET_KEY) return sendJson(res, 503, { error: 'unconfigured' });
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { error: 'bad_request' });
+        authorizeAdmin(data).then((okAuth) => {
+            if (!okAuth) return sendJson(res, 401, { error: 'unauthorized' });
+            const sid = (data && data.sessionId) || '';
+            const carrier = (data && data.carrier) || '';
+            const tracking = String((data && data.tracking) || '').trim().slice(0, 80);
+            if (sid.indexOf('cs_') !== 0 || !tracking) return sendJson(res, 400, { error: 'bad_request' });
+            return stripeGet(STRIPE_SESSIONS_URL + '/' + encodeURIComponent(sid)).then((r) => {
+                if (r.status >= 300 || !r.json) return sendJson(res, 502, { error: 'stripe_error' });
+                const s = r.json;
+                const pi = (typeof s.payment_intent === 'string') ? s.payment_intent : (s.payment_intent && s.payment_intent.id);
+                if (!pi) return sendJson(res, 400, { error: 'no_payment_intent' });
+                const url = trackingUrl(carrier, tracking);
+                const params = { metadata: { fulfillment_status: 'shipped', carrier: carrier, tracking: tracking, shipped_at: String(Math.floor(Date.now() / 1000)) } };
+                return stripePost('https://api.stripe.com/v1/payment_intents/' + encodeURIComponent(pi), params).then((pr) => {
+                    if (pr.status >= 300) {
+                        const msg = (pr.json && pr.json.error && pr.json.error.message) || 'stripe_error';
+                        return sendJson(res, 502, { error: 'stripe_error', message: msg });
+                    }
+                    sendJson(res, 200, { ok: true, fulfillment: { status: 'shipped', carrier: carrier, tracking: tracking, trackingUrl: url } });
+                    // Notify the customer (best-effort, async, after the ack).
+                    const email = ((s.customer_details && s.customer_details.email) || s.customer_email || '').trim();
+                    const orderNo = (s.metadata && s.metadata.order_no) || orderNumber(s.id);
+                    if (email && mailer.mailerReady()) {
+                        const mail = mailer.renderShippedEmail({ orderNo: orderNo, carrier: carrier, tracking: tracking, trackingUrl: url });
+                        mailer.sendMail({ to: email, bcc: OWNER_EMAIL, subject: mail.subject, html: mail.html, replyTo: 'info@ecoroundholsters.com' })
+                            .then(() => console.log('[ship] email sent for ' + orderNo + ' to ' + email))
+                            .catch((e) => console.error('[ship] email failed:', e && e.message));
+                    }
+                });
+            });
+        }).catch(() => sendJson(res, 502, { error: 'upstream_error' }));
     });
 }
 
@@ -756,6 +826,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET' && urlPath === '/api/catalog') return handleCatalog(req, res);
     if (req.method === 'POST' && urlPath === '/api/orders') return handleOrders(req, res);
     if (req.method === 'POST' && urlPath === '/api/my-orders') return handleMyOrders(req, res);
+    if (req.method === 'POST' && urlPath === '/api/mark-shipped') return handleMarkShipped(req, res);
 
     let filePath = path.join(__dirname, urlPath === '/' ? '/index.html' : urlPath);
     const ext = path.extname(filePath);
