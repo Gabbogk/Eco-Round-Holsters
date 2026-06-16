@@ -12,8 +12,11 @@
     'use strict';
 
     var GA_MEASUREMENT_ID = 'G-7GWELZ0N7V'; // EcoRound Holsters GA4 - public value (ships in page source)
+    var ANALYTICS_ENABLED = false; // master switch: GA stays connected (ID kept) but is OFF for now.
+                                   // Flip to true to resume tracking + the consent banner, and restore
+                                   // the "Cookies & analytics" section of privacy.html when you do.
 
-    if (!GA_MEASUREMENT_ID) return; // not configured yet → no tracking, no banner
+    if (!ANALYTICS_ENABLED || !GA_MEASUREMENT_ID) return; // off → no tracking, no cookies, no banner
 
     var CONSENT_KEY = 'eco_analytics_consent'; // 'granted' | 'denied'
 
