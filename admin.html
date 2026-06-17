@@ -138,12 +138,16 @@
             <section class="view" id="view-products">
                 <div class="panel">
                     <div class="panel-title">Catalog <span class="muted-count" id="productsCount"></span></div>
-                    <p class="panel-note">Your live products and the exact prices checkout charges (from <code>catalog.js</code>). Prices are set in code - ask me to change any.</p>
+                    <p class="panel-note">Edit your base prices and paid-option upcharges (in dollars), then <strong>Save changes</strong> - updates apply instantly to checkout and the storefront. Clear a field to revert it to the built-in default. Every charge is still recomputed server-side, so prices stay tamper-proof.</p>
                     <div class="table-wrap">
                         <table>
-                            <thead><tr><th>Product</th><th>Base</th><th>Paid options</th></tr></thead>
+                            <thead><tr><th>Product</th><th>Base price</th><th>Paid options</th></tr></thead>
                             <tbody id="productsBody"><tr class="empty-row"><td colspan="3">Loading…</td></tr></tbody>
                         </table>
+                    </div>
+                    <div class="prices-actions">
+                        <button class="btn" id="savePricesBtn">Save changes</button>
+                        <span class="prices-msg" id="pricesMsg"></span>
                     </div>
                 </div>
             </section>

@@ -140,6 +140,19 @@ a { color: inherit; text-decoration: none; }
 .ship-msg.ok { color: var(--a-primary-hover); }
 .ship-msg.err { color: #e08585; }
 
+/* ===== Editable catalog prices ===== */
+.price-input { width: 82px; padding: 7px 8px; background: var(--a-bg); border: 1px solid var(--a-border); border-radius: 6px; color: var(--a-text); font-size: .85rem; text-align: right; }
+.price-input:focus { border-color: var(--a-primary); outline: none; }
+.po-in { display: inline-flex; align-items: center; gap: 3px; }
+.po-cur { color: var(--a-muted); font-size: .85rem; }
+.price-opts { display: flex; flex-direction: column; gap: 9px; }
+.price-opt { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.po-name { color: var(--a-text); font-size: .85rem; }
+.prices-actions { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.prices-msg { font-size: .85rem; }
+.prices-msg.ok { color: var(--a-primary-hover); }
+.prices-msg.err { color: #e08585; }
+
 /* ===== App shell ===== */
 .app { display: none; min-height: 100vh; }
 .app.active { display: grid; grid-template-columns: var(--a-sidebar) 1fr; }

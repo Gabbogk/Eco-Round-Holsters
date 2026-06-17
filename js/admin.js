@@ -183,17 +183,64 @@
             if (d && d.ok) { state.catalog = d.products || []; renderProducts(); }
         }).catch(function () {});
     }
+    function dollars(cents) { return ((cents || 0) / 100).toFixed(2); }
+    function priceField(pid, attr, val, cents) {
+        return '<span class="po-in"><span class="po-cur">$</span><input class="price-input" type="number" min="0" step="0.01" ' +
+            attr + '="' + esc(val) + '" data-pid="' + esc(pid) + '" value="' + dollars(cents) + '"></span>';
+    }
     function renderProducts() {
         var body = document.getElementById('productsBody');
         var cnt = document.getElementById('productsCount');
         if (!state.catalog.length) { body.innerHTML = '<tr class="empty-row"><td colspan="3">No products found.</td></tr>'; return; }
         if (cnt) cnt.textContent = state.catalog.length + ' products';
         body.innerHTML = state.catalog.map(function (p) {
-            var chips = p.addOns.length
-                ? p.addOns.map(function (a) { return '<span class="opt-chip">' + esc(OPT_LABELS[a.key] || a.key) + ' <b>+' + fmtMoney(a.price) + '</b></span>'; }).join('')
+            var opts = p.addOns.length
+                ? '<div class="price-opts">' + p.addOns.map(function (a) {
+                    return '<label class="price-opt"><span class="po-name">' + esc(OPT_LABELS[a.key] || a.key) + '</span>' +
+                        priceField(p.id, 'data-addon', a.key, a.price) + '</label>';
+                }).join('') + '</div>'
                 : '<span style="color:var(--a-dim)">No paid add-ons</span>';
-            return '<tr><td><strong>' + esc(p.name) + '</strong></td><td>' + fmtMoney(p.base) + '</td><td><div class="opt-chips">' + chips + '</div></td></tr>';
+            return '<tr><td><strong>' + esc(p.name) + '</strong></td>' +
+                '<td>' + priceField(p.id, 'data-field', 'base', p.base) + '</td>' +
+                '<td>' + opts + '</td></tr>';
         }).join('');
+    }
+
+    // Collect every price input into the override blob the server expects (dollars
+    // -> integer cents). A blank/invalid field becomes null, which the server
+    // sanitizes back to the built-in default - so you can never save a broken price.
+    function gatherPrices() {
+        var products = {};
+        document.querySelectorAll('#productsBody .price-input').forEach(function (inp) {
+            var pid = inp.dataset.pid; if (!pid) return;
+            if (!products[pid]) products[pid] = { addOns: {} };
+            var v = parseFloat(inp.value);
+            var cents = isFinite(v) ? Math.round(v * 100) : null;
+            if (inp.dataset.field === 'base') products[pid].base = cents;
+            else if (inp.dataset.addon) products[pid].addOns[inp.dataset.addon] = cents;
+        });
+        return { products: products };
+    }
+
+    function savePrices() {
+        var btn = document.getElementById('savePricesBtn');
+        var msg = document.getElementById('pricesMsg');
+        if (!adminToken) { msg.textContent = 'Not signed in.'; msg.className = 'prices-msg err'; return; }
+        var lbl = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Saving…'; msg.textContent = ''; msg.className = 'prices-msg';
+        fetch('/api/prices', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sbToken: adminToken, prices: gatherPrices() })
+        }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+            .then(function (res) {
+                if (res.status === 200 && res.j && res.j.ok) {
+                    msg.textContent = '✓ Saved - live on the store now.'; msg.className = 'prices-msg ok';
+                    loadCatalog();
+                } else {
+                    msg.textContent = (res.j && res.j.message) || 'Could not save. Try again.'; msg.className = 'prices-msg err';
+                }
+            }).catch(function () { msg.textContent = 'Network error - try again.'; msg.className = 'prices-msg err'; })
+            .finally(function () { btn.disabled = false; btn.textContent = lbl; });
     }
 
     // ---- orders (live from Stripe via /api/orders) ----
@@ -445,6 +492,7 @@
     document.getElementById('exportBtn').addEventListener('click', exportCsv);
     document.getElementById('refreshBtn').addEventListener('click', refresh);
     document.getElementById('logoutBtn').addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
+    (function () { var spb = document.getElementById('savePricesBtn'); if (spb) spb.addEventListener('click', savePrices); })();
     document.getElementById('menuToggle').addEventListener('click', function () { document.getElementById('sidebar').classList.toggle('open'); });
 
     // auto-login if a session is already stored

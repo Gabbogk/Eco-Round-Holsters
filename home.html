@@ -464,6 +464,24 @@
         </div>
     </div>
 
+    <script>
+    /* Keep the featured "From $X" prices in sync with the live catalog. */
+    (function () {
+        fetch('/api/catalog').then(function (r) { return r.json(); }).then(function (cat) {
+            if (!cat || !cat.products) return;
+            var byId = {}; cat.products.forEach(function (p) { byId[p.id] = p; });
+            document.querySelectorAll('.product-card').forEach(function (card) {
+                var link = card.querySelector('a[href^="product-"]');
+                var priceEl = card.querySelector('.price-current');
+                if (!link || !priceEl) return;
+                var id = link.getAttribute('href').replace(/^product-/, '').replace(/\.html$/, '');
+                var p = byId[id]; if (!p) return;
+                var d = p.base / 100;
+                priceEl.textContent = 'From $' + (d % 1 === 0 ? d : d.toFixed(2));
+            });
+        }).catch(function () {});
+    })();
+    </script>
     <script src="js/cart.js"></script>
     <script src="js/main.js"></script>
     <script src="js/header-auth.js"></script>

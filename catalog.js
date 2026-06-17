@@ -101,9 +101,67 @@ function clampText(s, max) {
 // Price a single cart line authoritatively. Throws on an unknown product.
 // Unknown option keys contribute $0 (a tampered/extra key can never raise OR
 // lower our price below base - it just doesn't match a paid add-on).
-function priceItem(item) {
+// Clamp a value to a valid integer cent price in [0, $10,000]. Returns null if
+// the value isn't a usable number, so callers can fall back to the default.
+function clampCents(n) {
+    n = (typeof n === 'string') ? parseInt(n, 10) : Math.round(n);
+    if (typeof n !== 'number' || !isFinite(n) || n < 0 || n > 1000000) return null;
+    return n;
+}
+
+// Merge admin price overrides over the built-in defaults, producing the effective
+// product map the server prices against. Only KNOWN product ids + KNOWN add-on
+// keys are ever touched (the option set is fixed in code), and every value is
+// clamped - a malformed/hostile override can never invent products or wild prices.
+function effectiveProducts(overrides) {
+    var out = {};
+    Object.keys(PRODUCTS).forEach(function (id) {
+        var d = PRODUCTS[id];
+        var addOns = {};
+        Object.keys(d.addOns).forEach(function (k) { addOns[k] = d.addOns[k]; });
+        out[id] = { name: d.name, base: d.base, addOns: addOns };
+    });
+    var ov = overrides && overrides.products;
+    if (ov && typeof ov === 'object') {
+        Object.keys(out).forEach(function (id) {
+            var o = ov[id];
+            if (!o || typeof o !== 'object') return;
+            var b = clampCents(o.base);
+            if (b !== null) out[id].base = b;
+            if (o.addOns && typeof o.addOns === 'object') {
+                Object.keys(out[id].addOns).forEach(function (k) {
+                    if (k in o.addOns) { var v = clampCents(o.addOns[k]); if (v !== null) out[id].addOns[k] = v; }
+                });
+            }
+        });
+    }
+    return out;
+}
+
+// Turn whatever the admin form submitted into a clean, complete override blob to
+// persist: every known product + add-on, validated/clamped, defaults where the
+// input is missing or invalid. This is what gets stored (never raw client input).
+function sanitizeOverrides(input) {
+    var src = (input && input.products) || {};
+    var products = {};
+    Object.keys(PRODUCTS).forEach(function (id) {
+        var d = PRODUCTS[id];
+        var s = src[id] || {};
+        var base = clampCents(s.base);
+        var addOns = {};
+        Object.keys(d.addOns).forEach(function (k) {
+            var v = (s.addOns && (k in s.addOns)) ? clampCents(s.addOns[k]) : null;
+            addOns[k] = (v !== null) ? v : d.addOns[k];
+        });
+        products[id] = { base: (base !== null ? base : d.base), addOns: addOns };
+    });
+    return { products: products };
+}
+
+function priceItem(item, products) {
+    products = products || PRODUCTS;
     if (!item || typeof item !== 'object') throw new Error('invalid item');
-    var p = PRODUCTS[item.id];
+    var p = products[item.id];
     if (!p) throw new Error('unknown product: ' + item.id);
 
     var unit = p.base;
@@ -130,11 +188,12 @@ function priceItem(item) {
 }
 
 // Price a whole cart. Returns { lines:[...], subtotal, shipping }.
-function priceCart(items) {
+function priceCart(items, products) {
     if (!Array.isArray(items) || items.length === 0) throw new Error('empty cart');
     if (items.length > 50) throw new Error('cart too large');
+    products = products || PRODUCTS;
 
-    var lines = items.map(priceItem);
+    var lines = items.map(function (it) { return priceItem(it, products); });
     var subtotal = lines.reduce(function (sum, l) { return sum + l.unitAmount * l.qty; }, 0);
     var shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT;
 
@@ -146,5 +205,7 @@ module.exports = {
     FREE_SHIPPING_THRESHOLD: FREE_SHIPPING_THRESHOLD,
     SHIPPING_FLAT: SHIPPING_FLAT,
     priceItem: priceItem,
-    priceCart: priceCart
+    priceCart: priceCart,
+    effectiveProducts: effectiveProducts,
+    sanitizeOverrides: sanitizeOverrides
 };

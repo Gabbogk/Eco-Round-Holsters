@@ -218,6 +218,25 @@
 
         recalc();
     </script>
+    <script>
+    /* Pull live prices from the catalog so what's shown always equals what checkout charges. */
+    (function () {
+        var PID = 'suupack';
+        fetch('/api/catalog').then(function (r) { return r.json(); }).then(function (cat) {
+            var p = cat && cat.products && cat.products.filter(function (x) { return x.id === PID; })[0];
+            if (!p) return;
+            if (typeof BASE !== 'undefined') BASE = p.base / 100;
+            var ap = {}; (p.addOns || []).forEach(function (a) { ap[a.key] = a.price / 100; });
+            document.querySelectorAll('[data-key]').forEach(function (el) {
+                var k = el.dataset.key; if (!(k in ap)) return;
+                el.dataset.price = ap[k];
+                var lbl = el.classList.contains('opt-btn') ? el.querySelector('.add') : (el.parentNode && el.parentNode.querySelector('.pr'));
+                if (lbl) lbl.textContent = ap[k] > 0 ? ('+$' + (ap[k] % 1 === 0 ? ap[k] : ap[k].toFixed(2))) : '';
+            });
+            if (typeof recalc === 'function') recalc();
+        }).catch(function () {});
+    })();
+    </script>
     <script src="js/header-auth.js"></script>
     <script src="js/analytics.js"></script>
 </body>

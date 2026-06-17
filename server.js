@@ -278,6 +278,57 @@ function supabaseGet(path, token) {
     });
 }
 
+// Write (upsert) JSON to Supabase REST with the caller's access token (RLS lets
+// only an admin write). Resolves true on a 2xx, false otherwise.
+function supabaseWrite(method, path, token, bodyObj) {
+    return new Promise((resolve) => {
+        const body = JSON.stringify(bodyObj);
+        const r = https.request(SUPABASE_URL + path, {
+            method: method,
+            headers: {
+                apikey: SUPABASE_PUBLISHABLE_KEY,
+                Authorization: 'Bearer ' + token,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=minimal',
+                'Content-Length': Buffer.byteLength(body)
+            }
+        }, (resp) => { resp.resume(); resp.on('end', () => resolve(resp.statusCode >= 200 && resp.statusCode < 300)); });
+        r.on('error', () => resolve(false));
+        r.write(body); r.end();
+    });
+}
+
+// --- Live pricing -----------------------------------------------------------
+// Admin price overrides live in Supabase (table app_settings, row key='catalog')
+// and are merged over the catalog.js DEFAULTS. Cached briefly so checkout/catalog
+// don't hit Supabase every request, and ALWAYS falling back to code prices if
+// Supabase is empty/unreachable - a DB hiccup can never break checkout or price $0.
+let _priceCache = { products: null, at: 0 };
+const PRICE_TTL_MS = 30 * 1000;
+function fetchPriceOverrides() {
+    return new Promise((resolve) => {
+        const req = https.get(SUPABASE_URL + '/rest/v1/app_settings?key=eq.catalog&select=value', {
+            headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: 'Bearer ' + SUPABASE_PUBLISHABLE_KEY }
+        }, (resp) => {
+            let d = '';
+            resp.on('data', (c) => { d += c; });
+            resp.on('end', () => { try { const rows = JSON.parse(d); resolve((Array.isArray(rows) && rows[0] && rows[0].value) || {}); } catch (e) { resolve({}); } });
+        });
+        req.on('error', () => resolve({}));
+        // Never let a slow DB hang checkout - fall back to code prices after 4s.
+        req.setTimeout(4000, () => { req.destroy(); resolve({}); });
+    });
+}
+function getEffectiveProducts() {
+    const now = Date.now();
+    if (_priceCache.products && (now - _priceCache.at) < PRICE_TTL_MS) return Promise.resolve(_priceCache.products);
+    return fetchPriceOverrides().then((ov) => {
+        const eff = catalog.effectiveProducts(ov);
+        _priceCache = { products: eff, at: now };
+        return eff;
+    }).catch(() => _priceCache.products || catalog.effectiveProducts({}));
+}
+
 // True if the Supabase access token belongs to an admin (role='admin' in the
 // profiles table). Uses only the token + public key; RLS scopes the read.
 function verifySupabaseAdmin(token) {
@@ -402,8 +453,10 @@ function handleCheckout(req, res) {
     readJsonBody(req, (err, data) => {
         if (err) return sendJson(res, 400, { error: 'bad_request' });
 
+        getEffectiveProducts().then((effProducts) => {
+
         let priced;
-        try { priced = catalog.priceCart(data && data.items); }
+        try { priced = catalog.priceCart(data && data.items, effProducts); }
         catch (e) { return sendJson(res, 400, { error: 'invalid_cart', message: String(e.message || e) }); }
 
         const origin = redirectOrigin(req);
@@ -473,6 +526,7 @@ function handleCheckout(req, res) {
             const msg = (r.json && r.json.error && r.json.error.message) || 'stripe_error';
             sendJson(res, 502, { error: 'stripe_error', message: msg });
         }).catch(() => sendJson(res, 502, { error: 'stripe_unreachable' }));
+        }); // end getEffectiveProducts().then
     });
 }
 
@@ -508,16 +562,37 @@ function handleOrder(req, res) {
 // GET /api/catalog -> the product/price list (public; same prices shown on the
 // product pages). Powers the admin Products view.
 function handleCatalog(req, res) {
-    const products = Object.keys(catalog.PRODUCTS).map((id) => {
-        const p = catalog.PRODUCTS[id];
-        return {
-            id: id,
-            name: p.name,
-            base: p.base,
-            addOns: Object.keys(p.addOns).map((k) => ({ key: k, price: p.addOns[k] }))
-        };
+    getEffectiveProducts().then((eff) => {
+        const products = Object.keys(eff).map((id) => {
+            const p = eff[id];
+            return {
+                id: id,
+                name: p.name,
+                base: p.base,
+                addOns: Object.keys(p.addOns).map((k) => ({ key: k, price: p.addOns[k] }))
+            };
+        });
+        sendJson(res, 200, { ok: true, products: products, freeShippingThreshold: catalog.FREE_SHIPPING_THRESHOLD, flatShipping: catalog.SHIPPING_FLAT });
     });
-    sendJson(res, 200, { ok: true, products: products, freeShippingThreshold: catalog.FREE_SHIPPING_THRESHOLD, flatShipping: catalog.SHIPPING_FLAT });
+}
+
+// POST /api/prices { sbToken, prices } -> save admin price overrides. Admin-gated.
+// The submission is sanitized to known products/keys + clamped before it's stored
+// (raw client input is never persisted), then the price cache is busted so the
+// change takes effect immediately for checkout, the catalog, and the storefront.
+function handleSavePrices(req, res) {
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { error: 'bad_request' });
+        verifySupabaseAdmin(data && data.sbToken).then((isAdmin) => {
+            if (!isAdmin) return sendJson(res, 401, { error: 'unauthorized' });
+            const blob = catalog.sanitizeOverrides(data && data.prices);
+            return supabaseWrite('POST', '/rest/v1/app_settings', data.sbToken, [{ key: 'catalog', value: blob }]).then((ok) => {
+                if (!ok) return sendJson(res, 502, { error: 'save_failed', message: 'Could not save. Make sure the app_settings table + policies exist in Supabase.' });
+                _priceCache = { products: null, at: 0 };
+                sendJson(res, 200, { ok: true });
+            });
+        }).catch(() => sendJson(res, 502, { error: 'upstream_error' }));
+    });
 }
 
 // Map a carrier + tracking number to a public tracking URL ('' if unknown carrier).
@@ -962,6 +1037,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && urlPath === '/api/orders') return handleOrders(req, res);
     if (req.method === 'POST' && urlPath === '/api/my-orders') return handleMyOrders(req, res);
     if (req.method === 'POST' && urlPath === '/api/mark-shipped') return handleMarkShipped(req, res);
+    if (req.method === 'POST' && urlPath === '/api/prices') return handleSavePrices(req, res);
 
     serveStatic(req, res, urlPath);
 });
