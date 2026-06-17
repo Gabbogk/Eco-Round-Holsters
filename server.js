@@ -1024,8 +1024,29 @@ function serveStatic(req, res, urlPath) {
     });
 }
 
+// Per-IP, per-minute caps for the API endpoints that don't set their own (tighter)
+// limit inside the handler. Caps are generous so real users never hit them - they
+// exist to stop flood/amplification, especially on the endpoints that make outbound
+// Stripe calls. The already-limited ones (admin-login, checkout, signup) are absent
+// on purpose so they aren't double-limited.
+const API_LIMITS = {
+    '/api/order': 30,          // public; each hit does a Stripe session lookup
+    '/api/my-orders': 30,      // customer; each hit lists Stripe sessions (expensive)
+    '/api/catalog': 120,       // public; cheap (server-cached) - high cap for shared IPs
+    '/api/orders': 30,         // admin
+    '/api/mark-shipped': 30,   // admin
+    '/api/prices': 30,         // admin
+    '/api/signups': 30,        // admin
+    '/api/stripe-webhook': 300 // signature-gated; generous for legit Stripe bursts
+};
+
 const server = http.createServer((req, res) => {
     const urlPath = req.url.split('?')[0];
+
+    const apiCap = API_LIMITS[urlPath];
+    if (apiCap && rateLimited('api:' + urlPath + ':' + clientIp(req), apiCap, 60000)) {
+        return sendJson(res, 429, { error: 'rate_limited', message: 'Too many requests. Please slow down and try again shortly.' });
+    }
 
     if (req.method === 'POST' && urlPath === '/api/admin-login') return handleAdminLogin(req, res);
     if (req.method === 'POST' && urlPath === '/api/signup') return handleSignupSubmit(req, res);
