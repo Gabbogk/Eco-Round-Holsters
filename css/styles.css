@@ -322,6 +322,20 @@ ul {
     justify-content: center;
 }
 
+/* In the shop/product "Cart (N)" text header, the count sits inline inside the
+   parentheses - reset the floating corner-badge styling used on the icon button. */
+.pdp-cart .cart-count {
+    position: static;
+    background: none;
+    color: inherit;
+    width: auto;
+    height: auto;
+    padding: 0;
+    font-size: inherit;
+    font-weight: inherit;
+    display: inline;
+}
+
 /* Mobile Menu */
 .mobile-menu-btn {
     display: none;
