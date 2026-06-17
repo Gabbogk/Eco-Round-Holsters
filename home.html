@@ -36,6 +36,7 @@
     </script>
 </head>
 <body>
+    <a href="#main" class="skip-link">Skip to main content</a>
 
     <!-- Top Promo Bar -->
     <div class="promo-bar">
@@ -88,6 +89,8 @@
             </div>
         </div>
     </header>
+
+    <main id="main" tabindex="-1">
 
     <!-- Hero Section -->
     <section class="hero">
@@ -275,7 +278,7 @@
                     <h2>FIND YOUR PERFECT HOLSTER</h2>
                     <p>Select your firearm from our library of <strong>400+ gun models</strong> and we'll show you every holster that fits.</p>
                     <div class="finder-form">
-                        <select class="finder-select" id="gunBrand">
+                        <select class="finder-select" id="gunBrand" aria-label="Select firearm brand">
                             <option value="">Select Brand</option>
                             <option>Glock</option>
                             <option>Sig Sauer</option>
@@ -291,7 +294,7 @@
                             <option>Kimber</option>
                             <option>Canik</option>
                         </select>
-                        <select class="finder-select" id="gunModel">
+                        <select class="finder-select" id="gunModel" aria-label="Select firearm model">
                             <option value="">Select Model</option>
                         </select>
                         <a href="shop.html" class="btn btn-primary">Find Holsters</a>
@@ -379,13 +382,15 @@
                 <h2>JOIN THE ECOROUND FAMILY</h2>
                 <p>Get exclusive deals, new product alerts, and carry tips delivered to your inbox.</p>
                 <form class="newsletter-form" id="newsletterForm">
-                    <input type="email" placeholder="Enter your email address" required>
+                    <input type="email" placeholder="Enter your email address" aria-label="Email address" required>
                     <button type="submit" class="btn btn-primary">Subscribe</button>
                 </form>
                 <small>No spam, ever. Unsubscribe anytime.</small>
             </div>
         </div>
     </section>
+
+    </main>
 
     <!-- Footer -->
     <footer class="footer">
@@ -444,7 +449,7 @@
             <button class="search-close" id="searchClose">&times;</button>
             <h3>Search Our Store</h3>
             <form class="search-form">
-                <input type="text" placeholder="Search for holsters, gun models, accessories..." autofocus>
+                <input type="text" placeholder="Search for holsters, gun models, accessories..." aria-label="Search products" autofocus>
                 <button type="submit">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                 </button>

@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dots = document.querySelectorAll('.dot');
     let currentSlide = 0;
     let slideInterval;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     function goToSlide(index) {
         slides[currentSlide].classList.remove('active');
@@ -51,11 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
         dot.addEventListener('click', () => {
             clearInterval(slideInterval);
             goToSlide(parseInt(dot.dataset.slide));
-            startSlider();
+            if (!reduceMotion) startSlider();
         });
     });
 
-    startSlider();
+    if (!reduceMotion) startSlider();
 
     // ===== Search Modal =====
     const searchBtn = document.querySelector('.search-btn');
