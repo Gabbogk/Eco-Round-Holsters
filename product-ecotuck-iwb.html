@@ -163,11 +163,12 @@
             <!-- Firearm -->
             <div class="opt-group">
                 <div class="opt-label"><span>Your Firearm</span><span class="req">Required</span></div>
-                <div class="gun-search">
-                    <input type="text" id="gunInput" placeholder="Search your make &amp; model (e.g. Glock 19)…" aria-label="Search for your firearm make and model" autocomplete="off">
-                    <div class="gun-results" id="gunResults"></div>
+                <div class="gun-selects">
+                    <select id="gunMake" aria-label="Firearm make"><option value="">Select make…</option></select>
+                    <select id="gunModel" aria-label="Firearm model" disabled><option value="">Select model…</option></select>
                 </div>
                 <div class="gun-chosen" id="gunChosen"></div>
+                <a class="gun-missing" href="/firearm-request.html?from=ecotuck-iwb">I don't see my firearm</a>
             </div>
 
             <!-- Hand -->
@@ -220,6 +221,7 @@
     </main>
 
     <script src="js/cart.js"></script>
+    <script src="js/guns-data.js"></script>
     <script>
         var BASE = 55;
         var GUNS = [
@@ -308,30 +310,27 @@
             });
         }
 
-        // gun search
-        var gunInput = document.getElementById('gunInput');
-        var gunResults = document.getElementById('gunResults');
+        // firearm make/model selects (data from js/guns-data.js)
+        var gunMake = document.getElementById('gunMake');
+        var gunModel = document.getElementById('gunModel');
         var gunChosen = document.getElementById('gunChosen');
-        function renderGuns(q) {
-            q = q.toLowerCase();
-            var matches = GUNS.filter(function (g) { return g.toLowerCase().indexOf(q) >= 0; }).slice(0, 30);
-            gunResults.innerHTML = matches.map(function (g) { return '<div>' + g + '</div>'; }).join('') || '<div style="color:#666;cursor:default;">No match - we may still fit it; contact us.</div>';
-            gunResults.classList.add('show');
-            gunResults.querySelectorAll('div').forEach(function (d) {
-                if (!d.textContent.indexOf || d.textContent.indexOf('No match') === 0) return;
-                d.addEventListener('click', function () {
-                    state.gun = d.textContent;
-                    gunInput.value = d.textContent;
-                    gunChosen.textContent = '✓ Fitted for ' + d.textContent;
-                    gunChosen.classList.add('show');
-                    gunResults.classList.remove('show');
-                    document.getElementById('cartMsg').textContent = '';
-                });
-            });
-        }
-        gunInput.addEventListener('focus', function () { renderGuns(gunInput.value); });
-        gunInput.addEventListener('input', function () { state.gun = ''; gunChosen.classList.remove('show'); renderGuns(gunInput.value); });
-        document.addEventListener('click', function (e) { if (!e.target.closest('.gun-search')) gunResults.classList.remove('show'); });
+        var GUN_DATA = window.GUN_DATA || {};
+        Object.keys(GUN_DATA).forEach(function (mk) { var o = document.createElement('option'); o.value = mk; o.textContent = mk; gunMake.appendChild(o); });
+        gunMake.addEventListener('change', function () {
+            state.gun = ''; gunChosen.classList.remove('show');
+            gunModel.innerHTML = '<option value="">Select model…</option>';
+            var models = GUN_DATA[gunMake.value] || [];
+            models.forEach(function (m) { var o = document.createElement('option'); o.value = m; o.textContent = m; gunModel.appendChild(o); });
+            gunModel.disabled = !models.length;
+        });
+        gunModel.addEventListener('change', function () {
+            if (gunMake.value && gunModel.value) {
+                state.gun = gunMake.value + ' ' + gunModel.value;
+                gunChosen.textContent = '✓ Fitted for ' + state.gun;
+                gunChosen.classList.add('show');
+                document.getElementById('cartMsg').textContent = '';
+            } else { state.gun = ''; gunChosen.classList.remove('show'); }
+        });
 
         // add to cart
         document.getElementById('addCart').addEventListener('click', function () {
@@ -339,7 +338,7 @@
             if (!state.gun) {
                 msg.className = 'cart-msg err';
                 msg.textContent = 'Please pick your firearm first.';
-                gunInput.focus();
+                gunMake.focus();
                 return;
             }
             var total = recalc();

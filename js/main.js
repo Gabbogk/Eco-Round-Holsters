@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ===== Gun Finder Dropdowns =====
-    const gunModels = {
+    const gunModels = window.GUN_DATA || {
         'Glock': ['G17', 'G19', 'G19X', 'G26', 'G43', 'G43X', 'G45', 'G48'],
         'Sig Sauer': ['P320', 'P365', 'P365X', 'P365XL', 'P226', 'P229', 'P238', 'P938'],
         'Smith & Wesson': ['M&P Shield', 'M&P Shield Plus', 'M&P 2.0', 'SD9 VE', 'CSX'],
