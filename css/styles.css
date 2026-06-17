@@ -322,18 +322,10 @@ ul {
     justify-content: center;
 }
 
-/* In the shop/product "Cart (N)" text header, the count sits inline inside the
-   parentheses - reset the floating corner-badge styling used on the icon button. */
+/* The shop/product "Cart" header keeps the gold count badge, but sitting inline
+   in the flex row (vertically centered) instead of as the floating corner badge. */
 .pdp-cart .cart-count {
     position: static;
-    background: none;
-    color: inherit;
-    width: auto;
-    height: auto;
-    padding: 0;
-    font-size: inherit;
-    font-weight: inherit;
-    display: inline;
 }
 
 /* Mobile Menu */
