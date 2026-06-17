@@ -1230,6 +1230,27 @@ ul {
         display: flex;
     }
 
+    /* Tighten the header row so it fits a phone viewport (no horizontal scroll) */
+    .header-inner {
+        gap: 12px;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .logo-eco,
+    .logo-round {
+        font-size: 1.3rem;
+    }
+
+    .logo-sub {
+        letter-spacing: 1.5px;
+        font-size: 0.58rem;
+    }
+
+    .header-actions {
+        gap: 4px;
+    }
+
     .nav {
         position: fixed;
         top: 0;
@@ -1332,6 +1353,15 @@ ul {
 }
 
 @media (max-width: 480px) {
+    .header-inner {
+        gap: 8px;
+    }
+
+    .logo-eco,
+    .logo-round {
+        font-size: 1.15rem;
+    }
+
     .hero {
         height: 420px;
     }

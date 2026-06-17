@@ -3,6 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const catalog = require('./catalog');
 const mailer = require('./mailer');
 
@@ -69,13 +70,20 @@ const mimeTypes = {
     '.svg': 'image/svg+xml',
     '.ico': 'image/x-icon',
     '.woff': 'font/woff',
-    '.woff2': 'font/woff2'
+    '.woff2': 'font/woff2',
+    '.txt': 'text/plain; charset=utf-8',
+    '.xml': 'application/xml; charset=utf-8',
+    '.webmanifest': 'application/manifest+json'
 };
 
 // ---- small helpers -------------------------------------------------------
 
 function sendJson(res, status, obj) {
-    res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.writeHead(status, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff'
+    });
     res.end(JSON.stringify(obj));
 }
 
@@ -814,6 +822,76 @@ function sendOrderConfirmation(sessionId) {
     });
 }
 
+// --- Static file serving (caching + gzip + traversal-safe) ----------------
+const COMPRESSIBLE = ['.html', '.css', '.js', '.json', '.svg', '.xml', '.txt'];
+const LONG_CACHE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg'];
+
+// Cache policy by file type. HTML/CSS/JS stay `no-cache` (revalidate every time
+// via ETag -> cheap 304s) so a deploy is reflected immediately during launch
+// iteration; heavy, rarely-changing assets (images, fonts) cache for real.
+function cacheControlFor(ext) {
+    if (ext === '.woff' || ext === '.woff2') return 'public, max-age=31536000, immutable';
+    if (LONG_CACHE_EXT.indexOf(ext) >= 0) return 'public, max-age=604800';
+    return 'no-cache';
+}
+
+const SECURITY_HEADERS = {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin'
+};
+
+function send404(res) {
+    fs.readFile(path.join(__dirname, '404.html'), (e, page) => {
+        const headers = Object.assign({ 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }, SECURITY_HEADERS);
+        res.writeHead(404, headers);
+        res.end(e ? '<!doctype html><meta charset="utf-8"><title>404 - Not Found</title><p style="font-family:sans-serif">Page not found. <a href="/">Return home</a></p>' : page);
+    });
+}
+
+function serveStatic(req, res, urlPath) {
+    let decoded;
+    try { decoded = decodeURIComponent(urlPath); } catch (e) { return send404(res); }
+    if (decoded === '/') decoded = '/index.html';
+    // Never serve dotfiles/dot-dirs (.env, .git, ...) even if inside the root.
+    if (decoded.split('/').some((seg) => seg && seg[0] === '.')) return send404(res);
+
+    const filePath = path.join(__dirname, decoded);
+    // Containment: the resolved path must stay inside the web root (blocks ../ traversal).
+    const root = path.resolve(__dirname);
+    if (path.resolve(filePath).indexOf(root + path.sep) !== 0 && path.resolve(filePath) !== root) return send404(res);
+
+    fs.stat(filePath, (err, st) => {
+        if (err || !st.isFile()) return send404(res);
+        const ext = path.extname(filePath).toLowerCase();
+        const etag = 'W/"' + st.size.toString(16) + '-' + Math.floor(st.mtimeMs).toString(16) + '"';
+        const baseHeaders = Object.assign({
+            'Content-Type': mimeTypes[ext] || 'application/octet-stream',
+            'Cache-Control': cacheControlFor(ext),
+            'ETag': etag,
+            'Last-Modified': st.mtime.toUTCString()
+        }, SECURITY_HEADERS);
+
+        if (req.headers['if-none-match'] === etag) {
+            res.writeHead(304, baseHeaders);
+            return res.end();
+        }
+        fs.readFile(filePath, (e2, content) => {
+            if (e2) return send404(res);
+            const ae = req.headers['accept-encoding'] || '';
+            if (COMPRESSIBLE.indexOf(ext) >= 0 && /\bgzip\b/.test(ae) && content.length > 512) {
+                const gz = zlib.gzipSync(content);
+                res.writeHead(200, Object.assign({}, baseHeaders, {
+                    'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding', 'Content-Length': gz.length
+                }));
+                return res.end(gz);
+            }
+            res.writeHead(200, Object.assign({}, baseHeaders, { 'Content-Length': content.length }));
+            res.end(content);
+        });
+    });
+}
+
 const server = http.createServer((req, res) => {
     const urlPath = req.url.split('?')[0];
 
@@ -828,21 +906,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && urlPath === '/api/my-orders') return handleMyOrders(req, res);
     if (req.method === 'POST' && urlPath === '/api/mark-shipped') return handleMarkShipped(req, res);
 
-    let filePath = path.join(__dirname, urlPath === '/' ? '/index.html' : urlPath);
-    const ext = path.extname(filePath);
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-    fs.readFile(filePath, (err, content) => {
-        if (err) {
-            fs.readFile(path.join(__dirname, 'index.html'), (e, fallback) => {
-                res.writeHead(e ? 500 : 200, { 'Content-Type': 'text/html' });
-                res.end(e ? 'Server Error' : fallback);
-            });
-            return;
-        }
-        res.writeHead(200, { 'Content-Type': contentType });
-        res.end(content);
-    });
+    serveStatic(req, res, urlPath);
 });
 
 server.listen(PORT, '0.0.0.0', () => {
