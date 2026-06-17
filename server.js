@@ -102,6 +102,29 @@ function originOf(req) {
     return proto + '://' + host;
 }
 
+// For Stripe success/cancel redirects: pin to the canonical production origin so a
+// forged Host header can't aim the post-payment redirect at an attacker's domain.
+// Local dev (localhost) still uses the request origin; PUBLIC_ORIGIN env overrides.
+const PUBLIC_ORIGIN = process.env.PUBLIC_ORIGIN || '';
+function redirectOrigin(req) {
+    if (PUBLIC_ORIGIN) return PUBLIC_ORIGIN;
+    const host = (req.headers['host'] || '').toLowerCase();
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host)) return originOf(req);
+    return 'https://www.ecoroundholsters.com';
+}
+
+// Generic per-IP fixed-window rate limiter for public endpoints (abuse/DoS).
+// Separate from the admin-login limiter below. Buckets reset after windowMs.
+const rlBuckets = new Map();
+function rateLimited(bucketKey, max, windowMs) {
+    const now = Date.now();
+    let b = rlBuckets.get(bucketKey);
+    if (!b || now > b.resetAt) { b = { count: 0, resetAt: now + windowMs }; rlBuckets.set(bucketKey, b); }
+    b.count++;
+    if (rlBuckets.size > 5000) { for (const [k, v] of rlBuckets) { if (now > v.resetAt) rlBuckets.delete(k); } } // prune
+    return b.count > max;
+}
+
 // Follow redirects (Apps Script /exec 302-redirects to googleusercontent.com)
 function fetchUrl(url, depth) {
     depth = depth || 0;
@@ -373,6 +396,9 @@ function handleCheckout(req, res) {
             message: 'Checkout isn’t live yet. Email info@ecoroundholsters.com and we’ll take your order directly.'
         });
     }
+    if (rateLimited('checkout:' + clientIp(req), 15, 60000)) {
+        return sendJson(res, 429, { error: 'rate_limited', message: 'Too many requests. Please wait a moment and try again.' });
+    }
     readJsonBody(req, (err, data) => {
         if (err) return sendJson(res, 400, { error: 'bad_request' });
 
@@ -380,7 +406,7 @@ function handleCheckout(req, res) {
         try { priced = catalog.priceCart(data && data.items); }
         catch (e) { return sendJson(res, 400, { error: 'invalid_cart', message: String(e.message || e) }); }
 
-        const origin = originOf(req);
+        const origin = redirectOrigin(req);
 
         // Stash a per-line "what to build" summary in metadata (max 50 keys /
         // 500 chars each) so the admin Orders view can show the full config.
@@ -681,6 +707,9 @@ function handleMarkShipped(req, res) {
 // and key stay on the server and out of public client JS. Attaches APPS_SCRIPT_KEY
 // when set (forward-compatible if the Apps Script later requires a key for writes).
 function handleSignupSubmit(req, res) {
+    if (rateLimited('signup:' + clientIp(req), 8, 60000)) {
+        return sendJson(res, 429, { ok: false, error: 'rate_limited' });
+    }
     readJsonBody(req, (err, data) => {
         if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
         const email = (data && data.email ? String(data.email) : '').trim();
@@ -835,15 +864,43 @@ function cacheControlFor(ext) {
     return 'no-cache';
 }
 
-const SECURITY_HEADERS = {
-    'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'SAMEORIGIN',
-    'Referrer-Policy': 'strict-origin-when-cross-origin'
-};
+// Content Security Policy. Allowlists exactly what the site loads: supabase-js
+// from jsdelivr; Google Fonts CSS + woff; Supabase auth/REST (connect-src); GA
+// domains kept ready in case analytics is re-enabled. 'unsafe-inline' is required
+// because the product pages use inline <script>/<style> (no nonces on a static
+// server) - the rest of the policy still blocks external script injection, eval,
+// framing (clickjacking), <base> hijacking, and plugins/objects.
+const CSP = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "frame-ancestors 'none'",
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com",
+    "connect-src 'self' https://ofjjbqchnwlhzncntiwv.supabase.co https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com",
+    "form-action 'self'"
+].join('; ');
 
-function send404(res) {
+// Security headers for document/static responses. HSTS is sent ONLY over HTTPS
+// (Railway sets x-forwarded-proto) so it never poisons local http://localhost dev.
+function securityHeaders(req) {
+    const h = {
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Content-Security-Policy': CSP,
+        'Permissions-Policy': 'geolocation=(), microphone=(), camera=(), payment=(self)'
+    };
+    const proto = (req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
+    if (proto === 'https') h['Strict-Transport-Security'] = 'max-age=31536000';
+    return h;
+}
+
+function send404(req, res) {
     fs.readFile(path.join(__dirname, '404.html'), (e, page) => {
-        const headers = Object.assign({ 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }, SECURITY_HEADERS);
+        const headers = Object.assign({ 'Content-Type': 'text/html', 'Cache-Control': 'no-cache' }, securityHeaders(req));
         res.writeHead(404, headers);
         res.end(e ? '<!doctype html><meta charset="utf-8"><title>404 - Not Found</title><p style="font-family:sans-serif">Page not found. <a href="/">Return home</a></p>' : page);
     });
@@ -851,18 +908,18 @@ function send404(res) {
 
 function serveStatic(req, res, urlPath) {
     let decoded;
-    try { decoded = decodeURIComponent(urlPath); } catch (e) { return send404(res); }
+    try { decoded = decodeURIComponent(urlPath); } catch (e) { return send404(req, res); }
     if (decoded === '/') decoded = '/index.html';
     // Never serve dotfiles/dot-dirs (.env, .git, ...) even if inside the root.
-    if (decoded.split('/').some((seg) => seg && seg[0] === '.')) return send404(res);
+    if (decoded.split('/').some((seg) => seg && seg[0] === '.')) return send404(req, res);
 
     const filePath = path.join(__dirname, decoded);
     // Containment: the resolved path must stay inside the web root (blocks ../ traversal).
     const root = path.resolve(__dirname);
-    if (path.resolve(filePath).indexOf(root + path.sep) !== 0 && path.resolve(filePath) !== root) return send404(res);
+    if (path.resolve(filePath).indexOf(root + path.sep) !== 0 && path.resolve(filePath) !== root) return send404(req, res);
 
     fs.stat(filePath, (err, st) => {
-        if (err || !st.isFile()) return send404(res);
+        if (err || !st.isFile()) return send404(req, res);
         const ext = path.extname(filePath).toLowerCase();
         const etag = 'W/"' + st.size.toString(16) + '-' + Math.floor(st.mtimeMs).toString(16) + '"';
         const baseHeaders = Object.assign({
@@ -870,14 +927,14 @@ function serveStatic(req, res, urlPath) {
             'Cache-Control': cacheControlFor(ext),
             'ETag': etag,
             'Last-Modified': st.mtime.toUTCString()
-        }, SECURITY_HEADERS);
+        }, securityHeaders(req));
 
         if (req.headers['if-none-match'] === etag) {
             res.writeHead(304, baseHeaders);
             return res.end();
         }
         fs.readFile(filePath, (e2, content) => {
-            if (e2) return send404(res);
+            if (e2) return send404(req, res);
             const ae = req.headers['accept-encoding'] || '';
             if (COMPRESSIBLE.indexOf(ext) >= 0 && /\bgzip\b/.test(ae) && content.length > 512) {
                 const gz = zlib.gzipSync(content);
