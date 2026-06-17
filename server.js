@@ -879,7 +879,7 @@ const CSP = [
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com",
-    "connect-src 'self' https://ofjjbqchnwlhzncntiwv.supabase.co https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com",
+    "connect-src 'self' https://cdn.jsdelivr.net https://ofjjbqchnwlhzncntiwv.supabase.co https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://region1.google-analytics.com",
     "form-action 'self'"
 ].join('; ');
 
