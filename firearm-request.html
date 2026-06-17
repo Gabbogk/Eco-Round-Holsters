@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request a Firearm Fit | EcoRound Holsters</title>
+    <meta name="description" content="Don't see your make and model? Request a custom holster fit from EcoRound Holsters.">
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .req-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 20px;
+            background: radial-gradient(circle at 50% -10%, rgba(248,208,0,.16), transparent 55%), linear-gradient(135deg, #141414 0%, #201c10 50%, #141414 100%); }
+        .req-logo { transform: scale(1.2); margin-bottom: 30px; }
+        .req-card { width: 100%; max-width: 520px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 14px; padding: 32px; }
+        .req-card h1 { font-family: var(--font-heading); font-size: 1.7rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+        .req-lead { color: var(--color-text-muted); font-size: .95rem; line-height: 1.7; margin-bottom: 24px; }
+        .req-card label { display: block; font-size: .82rem; color: var(--color-text-muted); margin: 16px 0 6px; font-weight: 500; }
+        .req-star { color: var(--color-primary); }
+        .req-card input, .req-card textarea { width: 100%; background: #141414; border: 1px solid var(--color-border); border-radius: 8px; color: var(--color-text); font-size: .95rem; font-family: var(--font-body); padding: 11px 12px; }
+        .req-card input:focus, .req-card textarea:focus { outline: none; border-color: var(--color-primary); }
+        .req-card textarea { resize: vertical; }
+        .req-hint { display: block; color: var(--color-text-dim); font-size: .78rem; margin-top: 5px; }
+        #reqBtn { width: 100%; margin-top: 24px; }
+        .req-msg { margin-top: 14px; font-size: .88rem; min-height: 18px; }
+        .req-msg.err { color: #e08585; }
+        .req-back { display: inline-block; margin-top: 26px; color: var(--color-text-muted); font-size: .86rem; }
+        .req-back:hover { color: var(--color-primary-hover); }
+        .req-done { text-align: center; padding: 8px 0; }
+        .req-done .ic { width: 64px; height: 64px; border-radius: 50%; background: rgba(248,208,0,.15); border: 1px solid var(--color-primary); display: flex; align-items: center; justify-content: center; color: var(--color-primary-hover); margin: 0 auto 18px; }
+        .req-done h2 { font-family: var(--font-heading); font-size: 1.35rem; letter-spacing: 1px; margin-bottom: 10px; }
+        .req-done p { color: var(--color-text-muted); font-size: .95rem; line-height: 1.7; margin-bottom: 22px; }
+    </style>
+</head>
+<body>
+    <main class="req-wrap">
+        <a href="/home.html" class="logo req-logo">
+            <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+            <span class="logo-sub">HOLSTERS</span>
+        </a>
+
+        <div class="req-card">
+            <h1>Request Your Firearm</h1>
+            <p class="req-lead">Don't see your make and model? Tell us what you carry and we'll let you know if we can mold a holster for it - or add it to our lineup.</p>
+            <form id="reqForm" novalidate>
+                <label for="reqGun">Firearm make &amp; model <span class="req-star">*</span></label>
+                <input type="text" id="reqGun" placeholder="e.g. Wilson Combat EDC X9" autocomplete="off" required>
+
+                <label for="reqUrl">Link to the official product page</label>
+                <input type="url" id="reqUrl" placeholder="https://manufacturer.com/your-model">
+                <span class="req-hint">A link to the maker's page helps us confirm the exact make, model, and dimensions.</span>
+
+                <label for="reqNote">Anything else? (optional)</label>
+                <textarea id="reqNote" rows="3" placeholder="Carry style, variant, generation, etc."></textarea>
+
+                <label for="reqEmail">Your email <span class="req-star">*</span></label>
+                <input type="email" id="reqEmail" placeholder="you@example.com" autocomplete="email" required>
+
+                <button type="submit" class="btn btn-primary" id="reqBtn">Submit request</button>
+                <div class="req-msg" id="reqStatus"></div>
+            </form>
+        </div>
+
+        <a href="/home.html" class="req-back">← Back to store</a>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script>
+        (function () {
+            var product = new URLSearchParams(location.search).get('from') || '';
+            var token = null;
+            // Prefill email + capture the token if the customer is signed in (optional).
+            if (window.sb && window.sb.auth) {
+                window.sb.auth.getSession().then(function (s) {
+                    var sess = s && s.data && s.data.session;
+                    if (sess) {
+                        token = sess.access_token;
+                        var e = document.getElementById('reqEmail');
+                        if (sess.user && sess.user.email && !e.value) e.value = sess.user.email;
+                    }
+                }).catch(function () {});
+            }
+            var form = document.getElementById('reqForm');
+            form.addEventListener('submit', function (ev) {
+                ev.preventDefault();
+                var btn = document.getElementById('reqBtn');
+                var status = document.getElementById('reqStatus');
+                var gun = document.getElementById('reqGun').value.trim();
+                var email = document.getElementById('reqEmail').value.trim();
+                if (!gun) { status.className = 'req-msg err'; status.textContent = 'Please enter your firearm make and model.'; return; }
+                if (email.indexOf('@') < 1) { status.className = 'req-msg err'; status.textContent = 'Please enter a valid email.'; return; }
+                var lbl = btn.textContent;
+                btn.disabled = true; btn.textContent = 'Submitting…'; status.textContent = ''; status.className = 'req-msg';
+                fetch('/api/firearm-request', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gun: gun,
+                        url: document.getElementById('reqUrl').value.trim(),
+                        message: document.getElementById('reqNote').value.trim(),
+                        email: email, product: product, sbToken: token
+                    })
+                }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+                    .then(function (res) {
+                        if (res.status === 200 && res.j && res.j.ok) {
+                            document.getElementById('reqForm').outerHTML =
+                                '<div class="req-done"><div class="ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>' +
+                                '<h2>Request Received</h2><p>Thanks - we’ll review ' + gun.replace(/[<>&]/g, '') + ' and email you at ' + email.replace(/[<>&]/g, '') + '. If we can fit it, we’ll let you know how to order.</p>' +
+                                '<a href="shop.html" class="btn btn-primary">Browse holsters</a></div>';
+                        } else {
+                            status.className = 'req-msg err';
+                            status.textContent = (res.j && res.j.message) || 'Could not submit. Please try again or email info@ecoroundholsters.com.';
+                            btn.disabled = false; btn.textContent = lbl;
+                        }
+                    }).catch(function () {
+                        status.className = 'req-msg err'; status.textContent = 'Network error - please try again.';
+                        btn.disabled = false; btn.textContent = lbl;
+                    });
+            });
+        })();
+    </script>
+</body>
+</html>

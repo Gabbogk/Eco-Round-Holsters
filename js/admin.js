@@ -3,9 +3,9 @@
 
     var sb = window.sb; // Supabase client (from supabase-client.js)
     if (!sb || !sb.auth) { var _le = document.getElementById('loginError'); if (_le) _le.textContent = 'Could not load the sign-in service. Please refresh.'; return; }
-    var TITLES = { overview: 'Overview', signups: 'Signups', analytics: 'Analytics', products: 'Products', orders: 'Orders', site: 'Site' };
+    var TITLES = { overview: 'Overview', signups: 'Signups', analytics: 'Analytics', products: 'Products', orders: 'Orders', requests: 'Firearm Requests', site: 'Site' };
 
-    var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '', orders: [], catalog: [], checkoutLive: false, orderFilter: '' };
+    var state = { signups: [], sortBy: 'date', sortDir: -1, filter: '', orders: [], catalog: [], checkoutLive: false, orderFilter: '', requests: [] };
 
     // Friendly names for the priced option keys in catalog.js (for the Products view).
     var OPT_LABELS = {
@@ -65,6 +65,7 @@
                 .catch(function () { renderAll(); });
             loadCatalog();
             loadOrders();
+            loadRequests();
         });
     }
 
@@ -96,6 +97,7 @@
         fetchSignups().then(function (data) { if (data && data.ok) { state.signups = data.signups || []; renderAll(); } });
         loadCatalog();
         loadOrders();
+        loadRequests();
     }
 
     // ---- formatting ----
@@ -241,6 +243,27 @@
                 }
             }).catch(function () { msg.textContent = 'Network error - try again.'; msg.className = 'prices-msg err'; })
             .finally(function () { btn.disabled = false; btn.textContent = lbl; });
+    }
+
+    // ---- firearm requests (Supabase via /api/firearm-requests) ----
+    function loadRequests() {
+        fetch('/api/firearm-requests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: authBody() })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { if (d && d.ok) { state.requests = d.requests || []; renderRequests(); } })
+            .catch(function () {});
+    }
+    function renderRequests() {
+        var body = document.getElementById('reqBody');
+        if (!body) return;
+        var cnt = document.getElementById('reqCount');
+        if (cnt) cnt.textContent = state.requests.length ? state.requests.length + (state.requests.length === 1 ? ' request' : ' requests') : '';
+        if (!state.requests.length) { body.innerHTML = '<tr class="empty-row"><td colspan="4">No firearm requests yet.</td></tr>'; return; }
+        body.innerHTML = state.requests.map(function (r) {
+            var when = r.created_at ? fmtDateTime(r.created_at) : '-';
+            var link = r.firearm_url ? '<a href="' + esc(r.firearm_url) + '" target="_blank" rel="noopener">official page ↗</a>' : '';
+            var details = [esc(r.message || ''), link, (r.product ? '<span style="color:var(--a-dim)">from: ' + esc(r.product) + '</span>' : '')].filter(Boolean).join('<br>');
+            return '<tr><td style="white-space:nowrap;">' + when + '</td><td><strong>' + esc(r.gun || '') + '</strong></td><td>' + esc(r.email || '') + '</td><td>' + (details || '-') + '</td></tr>';
+        }).join('');
     }
 
     // ---- orders (live from Stripe via /api/orders) ----

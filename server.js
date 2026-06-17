@@ -926,6 +926,46 @@ function sendOrderConfirmation(sessionId) {
     });
 }
 
+// POST /api/firearm-request { gun, message, url, email, product, sbToken? } -> save a
+// "fit my firearm" request to Supabase. Public can submit (RLS allows anon insert);
+// admins read it in the dashboard. If a valid Supabase token is sent, the VERIFIED
+// account email is used; otherwise the email field. Validated + rate-limited.
+function handleFirearmRequest(req, res) {
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
+        const gun = String((data && data.gun) || '').trim().slice(0, 120);
+        const message = String((data && data.message) || '').trim().slice(0, 1000);
+        const url = String((data && data.url) || '').trim().slice(0, 500);
+        const product = String((data && data.product) || '').trim().slice(0, 80);
+        const formEmail = String((data && data.email) || '').trim().slice(0, 200);
+        const save = (email) => {
+            if (!email || email.indexOf('@') < 1) return sendJson(res, 400, { ok: false, error: 'invalid_email' });
+            if (!gun) return sendJson(res, 400, { ok: false, error: 'missing_gun' });
+            const row = { email: email, gun: gun, message: message, firearm_url: url, product: product };
+            supabaseWrite('POST', '/rest/v1/firearm_requests', SUPABASE_PUBLISHABLE_KEY, [row]).then((ok) => {
+                if (!ok) return sendJson(res, 502, { ok: false, error: 'save_failed', message: 'Could not submit right now. Please email info@ecoroundholsters.com.' });
+                sendJson(res, 200, { ok: true });
+            });
+        };
+        if (data && data.sbToken) {
+            supabaseGet('/auth/v1/user', data.sbToken).then((u) => save((u && u.email) ? String(u.email) : formEmail)).catch(() => save(formEmail));
+        } else { save(formEmail); }
+    });
+}
+
+// POST /api/firearm-requests { sbToken } -> admin: list firearm requests (newest first).
+function handleFirearmRequestsList(req, res) {
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { ok: false, error: 'bad_request' });
+        verifySupabaseAdmin(data && data.sbToken).then((isAdmin) => {
+            if (!isAdmin) return sendJson(res, 401, { ok: false, error: 'unauthorized' });
+            return supabaseGet('/rest/v1/firearm_requests?select=*&order=created_at.desc&limit=200', data.sbToken).then((rows) => {
+                sendJson(res, 200, { ok: true, requests: Array.isArray(rows) ? rows : [] });
+            });
+        }).catch(() => sendJson(res, 502, { ok: false, error: 'upstream_error' }));
+    });
+}
+
 // --- Static file serving (caching + gzip + traversal-safe) ----------------
 const COMPRESSIBLE = ['.html', '.css', '.js', '.json', '.svg', '.xml', '.txt'];
 const LONG_CACHE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.webp', '.svg'];
@@ -1037,6 +1077,8 @@ const API_LIMITS = {
     '/api/mark-shipped': 30,   // admin
     '/api/prices': 30,         // admin
     '/api/signups': 30,        // admin
+    '/api/firearm-request': 10, // public submit
+    '/api/firearm-requests': 30, // admin
     '/api/stripe-webhook': 300 // signature-gated; generous for legit Stripe bursts
 };
 
@@ -1059,6 +1101,8 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && urlPath === '/api/my-orders') return handleMyOrders(req, res);
     if (req.method === 'POST' && urlPath === '/api/mark-shipped') return handleMarkShipped(req, res);
     if (req.method === 'POST' && urlPath === '/api/prices') return handleSavePrices(req, res);
+    if (req.method === 'POST' && urlPath === '/api/firearm-request') return handleFirearmRequest(req, res);
+    if (req.method === 'POST' && urlPath === '/api/firearm-requests') return handleFirearmRequestsList(req, res);
 
     serveStatic(req, res, urlPath);
 });
