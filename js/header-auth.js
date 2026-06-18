@@ -35,7 +35,7 @@
     function mountPoint() {
         var actions = document.querySelector('.header-actions');
         if (actions) return { host: actions, before: actions.firstChild };
-        var cart = document.querySelector('.pdp-cart');
+        var cart = document.querySelector('.cart-btn, .pdp-cart');
         if (cart && cart.parentNode) return { host: cart.parentNode, before: cart };
         return null;
     }
