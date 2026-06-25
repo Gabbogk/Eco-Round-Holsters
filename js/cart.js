@@ -15,7 +15,7 @@
     // Mirror of catalog.js shipping rule - for DISPLAY only. Server decides the
     // real charge; these just power the drawer's "free shipping" nudge.
     var FREE_SHIP_AT = 10000; // cents
-    var FLAT_SHIP = 695;
+    var FLAT_SHIP = 995;
 
     function money(cents) { return '$' + (Math.round(cents) / 100).toFixed(2); }
 

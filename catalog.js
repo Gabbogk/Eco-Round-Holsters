@@ -11,7 +11,7 @@
 // ============================================================================
 
 var FREE_SHIPPING_THRESHOLD = 10000; // $100.00 - orders at/above ship free
-var SHIPPING_FLAT = 695;             // $6.95 flat under the threshold
+var SHIPPING_FLAT = 995;             // $9.95 flat under the threshold
 
 // Product ids that ALWAYS ship free regardless of subtotal (the checkout test item).
 var FREE_SHIP_IDS = { 'checkout-test': true };
