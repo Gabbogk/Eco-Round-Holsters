@@ -49,10 +49,10 @@
     // page shares DEFAULT_WASHERS; to add a washer color, add its hex here AND
     // its name to the list below. Master name -> hex map; unknown -> gray.
     var WASHER_HEX = {
-        Red: '#c0392b', Green: '#3aa856', Blue: '#2563b0',
-        Pink: '#e85d9c', Purple: '#7d3f9a', Copper: '#b87333', Gold: '#c9a227'
+        Red: '#c0392b', Green: '#3aa856', Blue: '#2563b0', Pink: '#e85d9c', Purple: '#7d3f9a',
+        Copper: '#b87333', Gold: '#c9a227', Silver: '#cdd2d7', Black: '#1a1a1a'
     };
-    var DEFAULT_WASHERS = ['Red', 'Green', 'Blue', 'Pink', 'Purple', 'Copper', 'Gold'];
+    var DEFAULT_WASHERS = ['Red', 'Green', 'Blue', 'Pink', 'Purple', 'Copper', 'Gold', 'Silver', 'Black'];
 
     function render(container, colors, kind, onPick) {
         if (!container) return;

@@ -743,14 +743,14 @@ ul {
     transition: box-shadow 0.15s ease;
 }
 .swatch:hover .swatch-chip { box-shadow: 0 0 0 1px var(--color-text-dim); }
-.swatch.active .swatch-chip { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-primary); }
+.swatch.active .swatch-chip { box-shadow: 0 0 0 1px var(--color-border), inset 0 0 0 3px var(--color-primary); }
 .swatch-label {
     font-family: var(--font-heading); font-size: 0.62rem; letter-spacing: 0.4px;
     text-transform: uppercase; color: var(--color-text-muted);
     text-align: center; line-height: 1.2;
 }
 .swatch.active .swatch-label { color: var(--color-primary-hover); }
-.swatch:focus-visible .swatch-chip { box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-primary-hover); }
+.swatch:focus-visible .swatch-chip { box-shadow: 0 0 0 1px var(--color-border), inset 0 0 0 3px var(--color-primary-hover); }
 .swatch:focus { outline: none; }
 /* washers read as rings */
 .swatch-washer .swatch-chip { border-radius: 50%; position: relative; }
@@ -759,8 +759,20 @@ ul {
     width: 38%; height: 38%; transform: translate(-50%, -50%);
     border-radius: 50%; background: var(--color-bg);
 }
-/* keep the active gold ring from tucking under the add-on row above */
-.washer-color .swatch-row { padding-top: 6px; }
+/* washers: horizontal scroller too (one row; scrolls as more colors are added) */
+.washer-color .swatch-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px 4px 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border) var(--color-bg-card);
+}
+.washer-color .swatch { flex: 0 0 auto; }
+.washer-color .swatch-row::-webkit-scrollbar { height: 8px; }
+.washer-color .swatch-row::-webkit-scrollbar-track { background: var(--color-bg-card); border-radius: 4px; }
+.washer-color .swatch-row::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+.washer-color .swatch-row::-webkit-scrollbar-thumb:hover { background: var(--color-text-dim); }
 /* Kydex color block: shown only when the plain-Kydex finish is selected */
 .kydex-color { display: none; }
 .kydex-color.show { display: block; }
@@ -780,12 +792,8 @@ ul {
 }
 .kydex-color .swatch { flex: 0 0 auto; width: 92px; scroll-snap-align: start; }
 .kydex-color .swatch-chip { width: 88px; height: 88px; }
-/* an OUTER active ring gets clipped at the scroller's left/right edges (scroll-snap
-   pulls the first/last swatch flush) - use an INSET ring so it's never cut off */
-.kydex-color .swatch.active .swatch-chip,
-.kydex-color .swatch:focus-visible .swatch-chip {
-    box-shadow: 0 0 0 1px var(--color-border), inset 0 0 0 3px var(--color-primary);
-}
+/* active highlight is an INSET ring (see .swatch.active above) so it's never clipped
+   at a scroller's edges - applies to both the Kydex and washer scrollers */
 .kydex-color .swatch-row::-webkit-scrollbar { height: 8px; }
 .kydex-color .swatch-row::-webkit-scrollbar-track { background: var(--color-bg-card); border-radius: 4px; }
 .kydex-color .swatch-row::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
