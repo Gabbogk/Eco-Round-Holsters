@@ -466,6 +466,10 @@ function handleCheckout(req, res) {
         const orderNo = newOrderNumber();
         const customerEmail = (data && typeof data.customerEmail === 'string' && /.+@.+\..+/.test(data.customerEmail)) ? data.customerEmail.slice(0, 200) : '';
         const meta = { order_no: orderNo };
+        // Optional customer order notes -> one metadata key (strip control chars so
+        // they can't break anything downstream; Stripe caps a value at 500 chars).
+        const orderNotes = (data && typeof data.notes === 'string') ? data.notes.replace(/\s+/g, ' ').trim().slice(0, 500) : '';
+        if (orderNotes) meta.notes = orderNotes;
         const rawItems = (data && Array.isArray(data.items)) ? data.items : [];
         // Cap at 24 lines so item_* (build sheet) + ro_* (reorder snapshot) + order_no
         // stay within Stripe's 50-key metadata limit. No real order has 24 distinct lines.
@@ -671,6 +675,7 @@ function handleOrders(req, res) {
                             items: items,
                             config: config,
                             custom: custom,
+                            notes: meta.notes || '',
                             fulfillment: fulfillmentOf(s)
                         };
                     });
@@ -918,7 +923,8 @@ function sendOrderConfirmation(sessionId) {
             subtotal: s.amount_subtotal,
             shippingCost: (s.total_details && s.total_details.amount_shipping) || 0,
             total: s.amount_total,
-            custom: custom
+            custom: custom,
+            notes: meta.notes || ''
         };
         const mail = mailer.renderOrderEmail(order);
         return mailer.sendMail({ to: email, bcc: OWNER_EMAIL, subject: mail.subject, html: mail.html, replyTo: 'info@ecoroundholsters.com' })

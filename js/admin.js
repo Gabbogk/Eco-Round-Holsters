@@ -377,8 +377,9 @@
             : (o.items || []).map(function (it) { return '<li>' + '<span class="oi-qty">' + (it.qty || 1) + 'x</span> ' + esc(it.description) + '</li>'; }).join('');
         var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
         var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
+        var notesBlock = o.notes ? '<div class="od-notes"><div class="od-h">Customer notes</div><div>' + esc(o.notes) + '</div></div>' : '';
         var ref = '<div class="od-ref"><span class="od-ordno">' + esc(o.orderNo || '') + '</span> &middot; ' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
-        return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' +
+        return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' + notesBlock +
             '<div class="od-block od-fulfill" data-ff="' + i + '">' + buildFulfill(o, i) + '</div>' + customNote + ref;
     }
 

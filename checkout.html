@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review Your Order | EcoRound Holsters</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .co-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--color-border); }
+        .co-wrap { max-width: 640px; margin: 0 auto; padding: 40px 24px 80px; }
+        .co-wrap h1 { font-family: var(--font-heading); font-size: clamp(1.6rem, 4vw, 2.2rem); letter-spacing: 1.5px; margin-bottom: 6px; }
+        .co-lead { color: var(--color-text-muted); font-size: .92rem; margin-bottom: 26px; }
+        .co-empty { text-align: center; padding: 40px 0; color: var(--color-text-muted); }
+        .co-empty a { color: var(--color-primary-hover); }
+        .co-card { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 8px 20px; }
+        .co-item { display: flex; justify-content: space-between; gap: 14px; padding: 16px 0; border-bottom: 1px solid var(--color-border); }
+        .co-item:last-child { border-bottom: none; }
+        .co-item-name { font-weight: 600; font-size: .95rem; }
+        .co-item-name .co-q { color: var(--color-text-dim); font-weight: 400; }
+        .co-item-sub { color: var(--color-text-muted); font-size: .82rem; line-height: 1.5; margin-top: 2px; }
+        .co-item-price { font-family: var(--font-heading); color: var(--color-primary-hover); white-space: nowrap; }
+        .co-totals { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 2px 4px; }
+        .co-totals .l { color: var(--color-text-muted); font-size: .9rem; }
+        .co-totals .v { font-family: var(--font-heading); font-size: 1.3rem; color: var(--color-text); }
+        .co-ship { color: var(--color-text-dim); font-size: .82rem; margin: 0 2px 24px; }
+        .co-editrow { margin: 12px 2px 0; }
+        .co-editrow a { color: var(--color-text-dim); font-size: .82rem; text-decoration: underline; cursor: pointer; }
+        .co-editrow a:hover { color: var(--color-primary-hover); }
+        .co-notes label { display: block; font-family: var(--font-heading); letter-spacing: .5px; text-transform: uppercase; font-size: .85rem; margin-bottom: 8px; }
+        .co-notes label span { color: var(--color-text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; font-size: .8rem; }
+        .co-notes textarea { width: 100%; min-height: 96px; resize: vertical; padding: 12px 14px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-text); font-size: .9rem; font-family: var(--font-body); line-height: 1.6; }
+        .co-notes textarea:focus { outline: none; border-color: var(--color-primary); }
+        .co-count { text-align: right; color: var(--color-text-dim); font-size: .72rem; margin-top: 4px; }
+        .co-pay { width: 100%; margin-top: 18px; }
+        .co-msg { min-height: 18px; text-align: center; font-size: .86rem; color: #e07a6b; margin-top: 12px; }
+        .co-secure { text-align: center; color: var(--color-text-dim); font-size: .8rem; margin-top: 12px; }
+        .co-back { display: inline-block; margin-top: 22px; color: var(--color-text-muted); font-size: .85rem; }
+        .co-back:hover { color: var(--color-primary-hover); }
+    </style>
+</head>
+<body>
+    <header class="co-header">
+        <a href="/home.html" class="logo"><span class="logo-eco">ECO</span><span class="logo-round">ROUND</span></a>
+        <button class="icon-btn cart-btn" aria-label="Cart">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            <span class="cart-count">0</span>
+        </button>
+    </header>
+
+    <main class="co-wrap">
+        <h1>REVIEW YOUR ORDER</h1>
+        <p class="co-lead">Check your build, add any notes, then continue to secure payment.</p>
+
+        <div class="co-empty" id="coEmpty" hidden>Your cart is empty. <a href="/shop.html">Browse holsters</a></div>
+
+        <div id="coBody">
+            <div class="co-card" id="coItems"></div>
+            <div class="co-totals"><span class="l">Subtotal</span><span class="v" id="coSub">$0.00</span></div>
+            <p class="co-ship" id="coShip"></p>
+            <div class="co-editrow"><a id="coEdit">Edit items</a></div>
+
+            <div class="co-notes" style="margin-top:26px;">
+                <label for="coNotes">Order notes <span>(optional)</span></label>
+                <textarea id="coNotes" maxlength="500" placeholder="Anything we should know? Special instructions, custom-graphic details, a gift message, etc."></textarea>
+                <div class="co-count"><span id="coCount">0</span>/500</div>
+            </div>
+
+            <button class="btn btn-primary co-pay" id="coPay">Continue to payment</button>
+            <div class="co-msg" id="coMsg"></div>
+            <p class="co-secure">You'll enter your shipping address and payment on the next secure Stripe screen.</p>
+            <a class="co-back" href="/shop.html">&larr; Keep shopping</a>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/cart.js"></script>
+    <script>
+    (function () {
+        var empty = document.getElementById('coEmpty');
+        var body = document.getElementById('coBody');
+        var itemsEl = document.getElementById('coItems');
+        var subEl = document.getElementById('coSub');
+        var shipEl = document.getElementById('coShip');
+        var payBtn = document.getElementById('coPay');
+        var msg = document.getElementById('coMsg');
+        var notes = document.getElementById('coNotes');
+
+        function money(c) { return '$' + (Math.round(c) / 100).toFixed(2); }
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+        function renderSummary() {
+            var items = (window.Cart && Cart.items) ? Cart.items() : [];
+            if (!items.length) { empty.hidden = false; body.hidden = true; return; }
+            empty.hidden = true; body.hidden = false;
+            itemsEl.innerHTML = items.map(function (it) {
+                var line = (it.unit || 0) * (it.qty || 1);
+                return '<div class="co-item"><div class="co-item-main">' +
+                        '<div class="co-item-name">' + esc(it.name) + (it.qty > 1 ? ' <span class="co-q">x' + it.qty + '</span>' : '') + '</div>' +
+                        (it.gun ? '<div class="co-item-sub">Fitted for ' + esc(it.gun) + '</div>' : '') +
+                        '<div class="co-item-sub">' + esc(it.summary || '') + (it.washerColor ? ' &middot; Washers: ' + esc(it.washerColor) : '') + '</div>' +
+                    '</div><div class="co-item-price">' + money(line) + '</div></div>';
+            }).join('');
+            var sub = Cart.subtotal();
+            subEl.textContent = money(sub);
+            shipEl.textContent = sub >= 10000 ? 'Free shipping unlocked.' : 'Shipping calculated next ($6.95, free over $100).';
+        }
+
+        renderSummary();
+        document.addEventListener('cart:change', renderSummary);
+        document.getElementById('coEdit').addEventListener('click', function () { if (window.Cart) Cart.open(); });
+        notes.addEventListener('input', function () { document.getElementById('coCount').textContent = notes.value.length; });
+
+        payBtn.addEventListener('click', function () {
+            msg.textContent = ''; payBtn.disabled = true; payBtn.textContent = 'Redirecting…';
+            Cart.checkout(notes.value).catch(function (err) {
+                msg.textContent = (err && err.message) || 'Couldn’t start checkout. Please try again.';
+                payBtn.disabled = false; payBtn.textContent = 'Continue to payment';
+            });
+        });
+    })();
+    </script>
+    <script src="js/header-auth.js"></script>
+</body>
+</html>

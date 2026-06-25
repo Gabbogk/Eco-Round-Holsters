@@ -103,7 +103,7 @@
         overlay.addEventListener('click', function () { toggle(false); });
         drawer.querySelector('.cart-drawer-close').addEventListener('click', function () { toggle(false); });
         drawer.querySelector('.cart-keep').addEventListener('click', function () { toggle(false); });
-        checkoutBtn.addEventListener('click', checkout);
+        checkoutBtn.addEventListener('click', function () { window.location.href = '/checkout.html'; });
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && drawer.classList.contains('open')) toggle(false);
         });
@@ -132,6 +132,7 @@
         // update every cart-count badge sitewide
         var n = Cart.count();
         document.querySelectorAll('.cart-count').forEach(function (el) { el.textContent = n; });
+        try { document.dispatchEvent(new Event('cart:change')); } catch (e) {} // let /checkout.html re-sync its summary
 
         if (!linesEl) return; // drawer not built yet
         var items = load();
@@ -187,13 +188,13 @@
         return Promise.resolve(null);
     }
 
-    function checkout() {
+    // Build the Stripe Checkout session and redirect. notes (optional) ride along
+    // onto the order. Returns a promise that RESOLVES while redirecting and REJECTS
+    // with a user-facing message on failure - the caller (/checkout.html) shows it.
+    function checkout(notes) {
         var items = load();
-        if (!items.length) return;
-        errEl.textContent = '';
-        checkoutBtn.disabled = true;
-        checkoutBtn.textContent = 'Redirecting…';
-        currentEmail().then(function (email) {
+        if (!items.length) return Promise.reject(new Error('Your cart is empty.'));
+        return currentEmail().then(function (email) {
             return fetch('/api/checkout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -203,22 +204,18 @@
                         // they ride along so the order's reorder snapshot can rebuild a full cart line.
                         return { id: it.id, name: it.name || '', options: it.options || [], gun: it.gun || '', washerColor: it.washerColor || '', summary: it.summary || '', unit: it.unit || 0, qty: it.qty || 1 };
                     }),
-                    customerEmail: email || undefined
+                    customerEmail: email || undefined,
+                    notes: (typeof notes === 'string' && notes.trim()) ? notes.trim().slice(0, 500) : undefined
                 })
             });
         }).then(function (r) {
             return r.json().then(function (j) { return { ok: r.ok, j: j }; });
         }).then(function (res) {
             if (res.ok && res.j && res.j.url) { window.location.href = res.j.url; return; }
-            errEl.textContent = (res.j && res.j.message) || 'Couldn’t start checkout. Please try again.';
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = 'Checkout';
-        }).catch(function () {
-            errEl.textContent = 'Network error - please try again.';
-            checkoutBtn.disabled = false;
-            checkoutBtn.textContent = 'Checkout';
+            throw new Error((res.j && res.j.message) || 'Couldn’t start checkout. Please try again.');
         });
     }
+    Cart.checkout = checkout;
 
     // Bind the existing cart icons (home .cart-btn, product/shop .pdp-cart) to open the drawer.
     function bindTriggers() {
