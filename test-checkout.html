@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout Test | EcoRound Holsters</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .tw { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 56px 24px;
+            background: radial-gradient(circle at 50% -10%, rgba(248,208,0,.16), transparent 55%), linear-gradient(135deg,#141414,#201c10 50%,#141414); }
+        .tw .logo { transform: scale(1.15); margin-bottom: 28px; }
+        .tw h1 { font-family: var(--font-heading); font-size: clamp(1.7rem,4vw,2.4rem); letter-spacing: 2px; margin-bottom: 12px; }
+        .tw p { max-width: 480px; color: var(--color-text-muted); line-height: 1.7; font-size: .95rem; margin: 0 auto 10px; }
+        .tw .price { font-family: var(--font-heading); font-size: 2.2rem; color: var(--color-primary-hover); margin: 12px 0 22px; }
+        .tw .hint { color: var(--color-text-dim); font-size: .82rem; max-width: 470px; margin: 18px auto 0; }
+    </style>
+</head>
+<body>
+    <main class="tw">
+        <a href="/home.html" class="logo"><span class="logo-eco">ECO</span><span class="logo-round">ROUND</span><span class="logo-sub">HOLSTERS</span></a>
+        <h1>CHECKOUT TEST</h1>
+        <p>Internal test item for verifying the full order flow end to end: the order number, the success page, and the branded confirmation email. This page is not linked anywhere on the store.</p>
+        <div class="price">$0.50</div>
+        <p>Free shipping. This is the smallest charge Stripe will process - a true 1-cent charge is rejected (Stripe's minimum is $0.50). Place it as a real order, then refund it in your Stripe Dashboard.</p>
+        <button class="btn btn-primary" id="addTest">Add test item &amp; open cart</button>
+        <p class="hint">After adding, the cart opens - press Checkout to go to Stripe. When you're done, refund the order in Stripe and (optionally) ask me to remove this test product.</p>
+    </main>
+
+    <button class="icon-btn cart-btn" aria-label="Cart" style="position:fixed;top:16px;right:16px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count">0</span>
+    </button>
+
+    <script src="js/cart.js"></script>
+    <script>
+        document.getElementById('addTest').addEventListener('click', function () {
+            Cart.add({ id: 'checkout-test', name: 'EcoRound Checkout Test', gun: '', washerColor: '', options: [], summary: '$0.50 checkout test', unit: 50 });
+            Cart.open();
+        });
+    </script>
+</body>
+</html>

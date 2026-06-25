@@ -13,6 +13,9 @@
 var FREE_SHIPPING_THRESHOLD = 10000; // $100.00 - orders at/above ship free
 var SHIPPING_FLAT = 695;             // $6.95 flat under the threshold
 
+// Product ids that ALWAYS ship free regardless of subtotal (the checkout test item).
+var FREE_SHIP_IDS = { 'checkout-test': true };
+
 // Per product: base price + the priced add-on keys. Anything a shopper can pick
 // that costs nothing (hand, belt-loop size, attachment, washer color) is simply
 // absent here and contributes $0 - it still rides along in the line description.
@@ -89,6 +92,14 @@ var PRODUCTS = {
             'finish-graphic-carbon': 2000,
             'addon-washers': 500
         }
+    },
+    // Internal checkout-test item: $0.50 (Stripe's minimum charge - a true 1-cent
+    // charge is rejected), free shipping. Reached only via /test-checkout.html
+    // (not linked anywhere). Safe to delete this entry once testing is done.
+    'checkout-test': {
+        name: 'EcoRound Checkout Test',
+        base: 50,
+        addOns: {}
     }
 };
 
@@ -196,6 +207,7 @@ function priceCart(items, products) {
     var lines = items.map(function (it) { return priceItem(it, products); });
     var subtotal = lines.reduce(function (sum, l) { return sum + l.unitAmount * l.qty; }, 0);
     var shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT;
+    if (lines.length && lines.every(function (l) { return FREE_SHIP_IDS[l.id]; })) shipping = 0;
 
     return { lines: lines, subtotal: subtotal, shipping: shipping };
 }

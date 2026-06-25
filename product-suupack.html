@@ -119,7 +119,7 @@
 
             <!-- Kydex color (solid Kydex only) -->
             <div class="opt-group kydex-color show" id="kydexColorBlock">
-                <div class="opt-label"><span>Kydex Color</span></div>
+                <div class="opt-label"><span id="colorLabel">Color</span></div>
                 <div class="swatch-row" id="kydexColors"></div>
             </div>
 
@@ -184,7 +184,8 @@
             state.finish = parseFloat(btn.dataset.price);
             state.graphic = !!btn.dataset.graphic;
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
-            document.getElementById('kydexColorBlock').classList.toggle('show', btn.dataset.key === 'finish-plain');
+            document.getElementById('kydexColorBlock').classList.toggle('show', !btn.dataset.graphic);
+            document.getElementById('colorLabel').textContent = btn.dataset.key === 'finish-carbon-2sided' ? 'Inside Color (outside is Black)' : 'Color';
         });
         wireRow('attachRow', function (btn) { state.attach = parseFloat(btn.dataset.price); });
         wireRow('washerRow', function (btn) {
@@ -208,7 +209,8 @@
             var total = recalc();
             var finishBtn = document.querySelector('#finishRow .opt-btn.active');
             var finishTxt = finishBtn.childNodes[0].textContent.trim();
-            if (finishBtn.dataset.key === 'finish-plain') finishTxt += ' (' + state.kydexColor + ')';
+            if (finishBtn.dataset.key === 'finish-carbon-2sided') finishTxt += ' (Outside Black / Inside ' + state.kydexColor + ')';
+            else if (!finishBtn.dataset.graphic) finishTxt += ' (' + state.kydexColor + ')';
             var attachTxt = document.querySelector('#attachRow .opt-btn.active').textContent.trim();
             var washerTxt = state.washer ? ('Colored Washers (' + state.washerColor + ')') : 'Standard Washers';
             var summary = finishTxt + ' · ' + washerTxt + ' · ' + attachTxt;
