@@ -117,28 +117,30 @@
                 <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
             </div>
 
+            <!-- Kydex color (solid Kydex only) -->
+            <div class="opt-group kydex-color show" id="kydexColorBlock">
+                <div class="opt-label"><span>Kydex Color</span></div>
+                <div class="swatch-row" id="kydexColors"></div>
+            </div>
+
+            <!-- Washers -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Washers</span></div>
+                <div class="opt-row" id="washerRow">
+                    <button class="opt-btn active" data-key="washer-standard" data-price="0">Standard</button>
+                    <button class="opt-btn" data-key="addon-washers" data-price="5">Colored <span class="add">+$5</span></button>
+                </div>
+                <div class="washer-color" id="washerColor">
+                    <div class="swatch-row" id="washerSwatches"></div>
+                </div>
+            </div>
+
             <!-- Attachment -->
             <div class="opt-group">
                 <div class="opt-label"><span>Attachment</span></div>
                 <div class="opt-row" id="attachRow">
                     <button class="opt-btn active" data-key="attach-beltclip" data-price="0">Belt Clip</button>
                     <button class="opt-btn" data-key="attach-teklok" data-price="0">Tek-Lok</button>
-                </div>
-            </div>
-
-            <!-- Add-ons -->
-            <div class="opt-group">
-                <div class="opt-label"><span>Add-ons</span></div>
-                <label class="addon"><input type="checkbox" data-key="addon-washers" data-price="5" id="washerCheck"><span class="nm">Colored Washers (set of 4)</span><span class="pr">+$5</span></label>
-                <div class="washer-color" id="washerColor">
-                    <div class="opt-row">
-                        <button class="opt-btn active" data-price="0">Red</button>
-                        <button class="opt-btn" data-price="0">Green</button>
-                        <button class="opt-btn" data-price="0">Blue</button>
-                        <button class="opt-btn" data-price="0">Purple</button>
-                        <button class="opt-btn" data-price="0">Copper</button>
-                        <button class="opt-btn" data-price="0">Gold</button>
-                    </div>
                 </div>
             </div>
 
@@ -155,13 +157,14 @@
     </main>
 
     <script src="js/cart.js"></script>
+    <script src="js/swatches.js"></script>
     <script>
         var BASE = 40;
-        var state = { finish: 0, attach: 0, addons: 0, washer: false, washerColor: 'Red', graphic: false };
+        var state = { finish: 0, attach: 0, addons: 0, washer: false, washerPrice: 0, washerColor: 'Red', kydexColor: 'Jet Black', graphic: false };
 
         function money(n) { return '$' + n.toFixed(2); }
         function recalc() {
-            var total = BASE + state.finish + state.attach + state.addons;
+            var total = BASE + state.finish + state.attach + state.washerPrice + state.addons;
             document.getElementById('price').textContent = money(total);
             document.getElementById('btnPrice').textContent = money(total);
             return total;
@@ -181,9 +184,16 @@
             state.finish = parseFloat(btn.dataset.price);
             state.graphic = !!btn.dataset.graphic;
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
+            document.getElementById('kydexColorBlock').classList.toggle('show', btn.dataset.key === 'finish-plain');
         });
         wireRow('attachRow', function (btn) { state.attach = parseFloat(btn.dataset.price); });
-        wireRow('washerColor', function (btn) { state.washerColor = btn.textContent.trim(); });
+        wireRow('washerRow', function (btn) {
+            state.washer = btn.dataset.key === 'addon-washers';
+            state.washerPrice = parseFloat(btn.dataset.price);
+            document.getElementById('washerColor').classList.toggle('show', state.washer);
+        });
+        EcoSwatch.renderKydex(document.getElementById('kydexColors'), function (name) { state.kydexColor = name; });
+        EcoSwatch.renderWashers(document.getElementById('washerSwatches'), function (name) { state.washerColor = name; });
 
         function recalcAddons() {
             var sum = 0;
@@ -192,17 +202,16 @@
             recalc();
         }
         document.querySelectorAll('.addon input').forEach(function (c) { c.addEventListener('change', recalcAddons); });
-        document.getElementById('washerCheck').addEventListener('change', function () {
-            state.washer = this.checked;
-            document.getElementById('washerColor').classList.toggle('show', this.checked);
-        });
 
         document.getElementById('addCart').addEventListener('click', function () {
             var msg = document.getElementById('cartMsg');
             var total = recalc();
-            var finishTxt = document.querySelector('#finishRow .opt-btn.active').childNodes[0].textContent.trim();
+            var finishBtn = document.querySelector('#finishRow .opt-btn.active');
+            var finishTxt = finishBtn.childNodes[0].textContent.trim();
+            if (finishBtn.dataset.key === 'finish-plain') finishTxt += ' (' + state.kydexColor + ')';
             var attachTxt = document.querySelector('#attachRow .opt-btn.active').textContent.trim();
-            var summary = finishTxt + ' · ' + attachTxt;
+            var washerTxt = state.washer ? ('Colored Washers (' + state.washerColor + ')') : 'Standard Washers';
+            var summary = finishTxt + ' · ' + washerTxt + ' · ' + attachTxt;
             var options = [];
             document.querySelectorAll('.opt-row .opt-btn.active[data-key]').forEach(function (b) { options.push(b.dataset.key); });
             document.querySelectorAll('.addon input:checked[data-key]').forEach(function (c) { options.push(c.dataset.key); });

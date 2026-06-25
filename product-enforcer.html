@@ -116,6 +116,17 @@
             <div class="pdp-price" id="price">$50.00</div>
             <p class="pdp-desc">Keep your spare magazine and handcuffs locked in and ready on one slim Kydex carrier - purpose-built for duty, security, and serious EDC. Precision-molded for positive retention and a fast, clean draw on both, the Lock n Load rides on your choice of Tek-Lok or paddle. Hand-built and individually inspected in the USA, backed by our lifetime warranty.</p>
 
+            <!-- Magazine fit -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Magazine Fit (your firearm)</span><span class="req">Required</span></div>
+                <div class="gun-selects">
+                    <select id="gunMake" aria-label="Firearm make"><option value="">Select make…</option></select>
+                    <select id="gunModel" aria-label="Firearm model" disabled><option value="">Select model…</option></select>
+                </div>
+                <div class="gun-chosen" id="gunChosen"></div>
+                <a class="gun-missing" href="/firearm-request.html?from=enforcer">I don't see my firearm</a>
+            </div>
+
             <!-- Finish -->
             <div class="opt-group">
                 <div class="opt-label"><span>Finish</span></div>
@@ -129,18 +140,13 @@
                 <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
             </div>
 
-            <!-- Magazine fit -->
-            <div class="opt-group">
-                <div class="opt-label"><span>Magazine Fit (your firearm)</span><span class="req">Required</span></div>
-                <div class="gun-selects">
-                    <select id="gunMake" aria-label="Firearm make"><option value="">Select make…</option></select>
-                    <select id="gunModel" aria-label="Firearm model" disabled><option value="">Select model…</option></select>
-                </div>
-                <div class="gun-chosen" id="gunChosen"></div>
-                <a class="gun-missing" href="/firearm-request.html?from=enforcer">I don't see my firearm</a>
+            <!-- Kydex color (solid Kydex only) -->
+            <div class="opt-group kydex-color show" id="kydexColorBlock">
+                <div class="opt-label"><span>Kydex Color</span></div>
+                <div class="swatch-row" id="kydexColors"></div>
             </div>
 
-            <!-- Hand -->
+            <!-- Carry Side -->
             <div class="opt-group">
                 <div class="opt-label"><span>Carry Side</span></div>
                 <div class="opt-row" id="handRow">
@@ -172,6 +178,7 @@
 
     <script src="js/cart.js"></script>
     <script src="js/guns-data.js"></script>
+    <script src="js/swatches.js"></script>
     <script>
         var BASE = 50;
         var GUNS = [
@@ -190,7 +197,7 @@
             'FN 509','FN 509 Tactical'
         ];
 
-        var state = { finish: 0, hand: 0, attach: 0, addons: 0, gun: '', washer: false, washerColor: 'Red', graphic: false };
+        var state = { finish: 0, hand: 0, attach: 0, addons: 0, gun: '', washer: false, washerColor: 'Red', kydexColor: 'Jet Black', graphic: false };
 
         function money(n) { return '$' + n.toFixed(2); }
         function recalc() {
@@ -214,9 +221,11 @@
             state.finish = parseFloat(btn.dataset.price);
             state.graphic = !!btn.dataset.graphic;
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
+            document.getElementById('kydexColorBlock').classList.toggle('show', btn.dataset.key === 'finish-plain');
         });
         wireRow('handRow', function (btn) { state.hand = parseFloat(btn.dataset.price); });
         wireRow('attachRow', function (btn) { state.attach = parseFloat(btn.dataset.price); });
+        EcoSwatch.renderKydex(document.getElementById('kydexColors'), function (name) { state.kydexColor = name; });
 
         // firearm make/model selects (data from js/guns-data.js)
         var gunMake = document.getElementById('gunMake');
@@ -244,7 +253,9 @@
             var msg = document.getElementById('cartMsg');
             if (!state.gun) { msg.className = 'cart-msg err'; msg.textContent = 'Please pick your firearm (for the mag fit) first.'; gunMake.focus(); return; }
             var total = recalc();
-            var finishTxt = document.querySelector('#finishRow .opt-btn.active').childNodes[0].textContent.trim();
+            var finishBtn = document.querySelector('#finishRow .opt-btn.active');
+            var finishTxt = finishBtn.childNodes[0].textContent.trim();
+            if (finishBtn.dataset.key === 'finish-plain') finishTxt += ' (' + state.kydexColor + ')';
             var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
             var attachTxt = document.querySelector('#attachRow .opt-btn.active').textContent.trim();
             var summary = finishTxt + ' · ' + handTxt + ' · ' + attachTxt;

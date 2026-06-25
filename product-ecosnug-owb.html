@@ -131,6 +131,17 @@
             <div class="pdp-price" id="price">$65.00</div>
             <p class="pdp-desc">Built to ride outside the waistband for fast, comfortable all-day carry and an effortless draw. The EcoSnug is precision-molded from premium Kydex with a slim, body-hugging profile that pulls your firearm tight to your side and stays planted on belt loops sized to your rig. Adjustable retention, a clean snag-free design, and that signature audible click. Hand-built and individually inspected in the USA, backed by our lifetime warranty.</p>
 
+            <!-- Firearm -->
+            <div class="opt-group">
+                <div class="opt-label"><span>Your Firearm</span><span class="req">Required</span></div>
+                <div class="gun-selects">
+                    <select id="gunMake" aria-label="Firearm make"><option value="">Select make…</option></select>
+                    <select id="gunModel" aria-label="Firearm model" disabled><option value="">Select model…</option></select>
+                </div>
+                <div class="gun-chosen" id="gunChosen"></div>
+                <a class="gun-missing" href="/firearm-request.html?from=ecosnug-owb">I don't see my firearm</a>
+            </div>
+
             <!-- Finish -->
             <div class="opt-group">
                 <div class="opt-label"><span>Finish</span></div>
@@ -144,15 +155,22 @@
                 <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
             </div>
 
-            <!-- Firearm -->
+            <!-- Kydex color (solid Kydex only) -->
+            <div class="opt-group kydex-color show" id="kydexColorBlock">
+                <div class="opt-label"><span>Kydex Color</span></div>
+                <div class="swatch-row" id="kydexColors"></div>
+            </div>
+
+            <!-- Washers -->
             <div class="opt-group">
-                <div class="opt-label"><span>Your Firearm</span><span class="req">Required</span></div>
-                <div class="gun-selects">
-                    <select id="gunMake" aria-label="Firearm make"><option value="">Select make…</option></select>
-                    <select id="gunModel" aria-label="Firearm model" disabled><option value="">Select model…</option></select>
+                <div class="opt-label"><span>Washers</span></div>
+                <div class="opt-row" id="washerRow">
+                    <button class="opt-btn active" data-key="washer-standard" data-price="0">Standard</button>
+                    <button class="opt-btn" data-key="addon-washers" data-price="5">Colored <span class="add">+$5</span></button>
                 </div>
-                <div class="gun-chosen" id="gunChosen"></div>
-                <a class="gun-missing" href="/firearm-request.html?from=ecosnug-owb">I don't see my firearm</a>
+                <div class="washer-color" id="washerColor">
+                    <div class="swatch-row" id="washerSwatches"></div>
+                </div>
             </div>
 
             <!-- Hand -->
@@ -177,17 +195,6 @@
             <!-- Add-ons -->
             <div class="opt-group">
                 <div class="opt-label"><span>Add-ons</span></div>
-                <label class="addon"><input type="checkbox" data-key="addon-washers" data-price="5" id="washerCheck"><span class="nm">Colored Washers (set of 4)</span><span class="pr">+$5</span></label>
-                <div class="washer-color" id="washerColor">
-                    <div class="opt-row">
-                        <button class="opt-btn active" data-price="0">Red</button>
-                        <button class="opt-btn" data-price="0">Green</button>
-                        <button class="opt-btn" data-price="0">Blue</button>
-                        <button class="opt-btn" data-price="0">Purple</button>
-                        <button class="opt-btn" data-price="0">Copper</button>
-                        <button class="opt-btn" data-price="0">Gold</button>
-                    </div>
-                </div>
                 <label class="addon"><input type="checkbox" data-key="addon-molding" data-price="10"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
             </div>
 
@@ -205,6 +212,7 @@
 
     <script src="js/cart.js"></script>
     <script src="js/guns-data.js"></script>
+    <script src="js/swatches.js"></script>
     <script>
         var BASE = 65;
         var GUNS = [
@@ -226,12 +234,12 @@
             ['images/products/ecosnug-carbon-purple.jpg','Purple Carbon Fiber']
         ];
 
-        var state = { finish: 0, hand: 0, loop: 0, addons: 0, gun: '', washer: false, washerColor: 'Red', graphic: false };
+        var state = { finish: 0, hand: 0, loop: 0, addons: 0, gun: '', washer: false, washerPrice: 0, washerColor: 'Red', kydexColor: 'Jet Black', graphic: false };
         var mainImg = document.getElementById('mainImg');
 
         function money(n) { return '$' + n.toFixed(2); }
         function recalc() {
-            var total = BASE + state.finish + state.hand + state.loop + state.addons;
+            var total = BASE + state.finish + state.hand + state.loop + state.washerPrice + state.addons;
             document.getElementById('price').textContent = money(total);
             document.getElementById('btnPrice').textContent = money(total);
             return total;
@@ -252,10 +260,17 @@
             if (btn.dataset.img) { mainImg.src = btn.dataset.img; }
             state.graphic = !!btn.dataset.graphic;
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
+            document.getElementById('kydexColorBlock').classList.toggle('show', btn.dataset.key === 'finish-plain');
         });
         wireRow('handRow', function (btn) { state.hand = parseFloat(btn.dataset.price); });
         wireRow('loopRow', function (btn) { state.loop = parseFloat(btn.dataset.price); });
-        wireRow('washerColor', function (btn) { state.washerColor = btn.textContent.trim(); });
+        wireRow('washerRow', function (btn) {
+            state.washer = btn.dataset.key === 'addon-washers';
+            state.washerPrice = parseFloat(btn.dataset.price);
+            document.getElementById('washerColor').classList.toggle('show', state.washer);
+        });
+        EcoSwatch.renderKydex(document.getElementById('kydexColors'), function (name) { state.kydexColor = name; });
+        EcoSwatch.renderWashers(document.getElementById('washerSwatches'), function (name) { state.washerColor = name; });
 
         function recalcAddons() {
             var sum = 0;
@@ -264,10 +279,6 @@
             recalc();
         }
         document.querySelectorAll('.addon input').forEach(function (c) { c.addEventListener('change', recalcAddons); });
-        document.getElementById('washerCheck').addEventListener('change', function () {
-            state.washer = this.checked;
-            document.getElementById('washerColor').classList.toggle('show', this.checked);
-        });
 
         var thumbsEl = document.getElementById('thumbs');
         GALLERY.forEach(function (g) {
@@ -306,10 +317,13 @@
             var total = recalc();
             var addons = [];
             document.querySelectorAll('.addon input').forEach(function (c) { if (c.checked) addons.push(c.parentNode.querySelector('.nm').textContent); });
-            var finishTxt = document.querySelector('#finishRow .opt-btn.active').childNodes[0].textContent.trim();
+            var finishBtn = document.querySelector('#finishRow .opt-btn.active');
+            var finishTxt = finishBtn.childNodes[0].textContent.trim();
+            if (finishBtn.dataset.key === 'finish-plain') finishTxt += ' (' + state.kydexColor + ')';
             var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
             var loopTxt = document.querySelector('#loopRow .opt-btn.active').textContent.trim();
-            var summary = finishTxt + ' · ' + handTxt + ' · ' + loopTxt + ' loop' + (addons.length ? ' · ' + addons.join(', ') : '');
+            var washerTxt = state.washer ? ('Colored Washers (' + state.washerColor + ')') : 'Standard Washers';
+            var summary = finishTxt + ' · ' + washerTxt + ' · ' + handTxt + ' · ' + loopTxt + ' loop' + (addons.length ? ' · ' + addons.join(', ') : '');
             var options = [];
             document.querySelectorAll('.opt-row .opt-btn.active[data-key]').forEach(function (b) { options.push(b.dataset.key); });
             document.querySelectorAll('.addon input:checked[data-key]').forEach(function (c) { options.push(c.dataset.key); });
