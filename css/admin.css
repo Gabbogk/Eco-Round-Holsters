@@ -399,6 +399,9 @@ tbody tr:hover { background: var(--a-card-hover); }
 .od-notes { margin: 0 16px 14px; padding: 12px 14px; background: rgba(248, 208, 0, 0.08); border: 1px solid rgba(248, 208, 0, 0.3); border-radius: 8px; }
 .od-notes .od-h { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 1px; color: var(--a-primary-hover); margin-bottom: 6px; }
 .od-notes .od-h + div { font-size: 0.88rem; color: var(--a-text); line-height: 1.6; }
+.od-totals .od-tl { display: flex; justify-content: space-between; gap: 14px; font-size: 0.84rem; color: var(--a-text); padding: 3px 0; }
+.od-totals .od-tl span:last-child { font-variant-numeric: tabular-nums; }
+.od-totals .od-tl-tot { margin-top: 4px; padding-top: 7px; border-top: 1px solid var(--a-border); font-weight: 600; color: var(--a-primary-hover); }
 .od-ref { padding: 0 16px 16px; font-size: 0.74rem; color: var(--a-dim); word-break: break-all; }
 .od-ref a { color: var(--a-primary-hover); }
 .od-ordno { font-family: var(--font-heading); font-weight: 600; letter-spacing: 0.5px; color: var(--a-primary-hover); }

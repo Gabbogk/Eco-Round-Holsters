@@ -305,10 +305,13 @@
             c.innerHTML = '<div class="panel"><div class="setup">' + CART_SVG + '<h3>No orders yet</h3><p>Checkout is live - paid orders will show up here as they come in.</p></div></div>';
             return;
         }
-        var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0); }, 0);
+        var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0) - (o.tax || 0); }, 0);
+        var taxCollected = state.orders.reduce(function (s, o) { return s + (o.tax || 0); }, 0);
         c.innerHTML = '<div class="panel">' +
-            '<div class="summary-row"><div><div class="s-val">' + fmtMoney(revenue) + '</div><div class="s-lbl">Revenue</div></div>' +
-            '<div><div class="s-val">' + state.orders.length + '</div><div class="s-lbl">Paid orders</div></div></div>' +
+            '<div class="summary-row"><div><div class="s-val">' + fmtMoney(revenue) + '</div><div class="s-lbl">' + (taxCollected > 0 ? 'Revenue (excl. tax)' : 'Revenue') + '</div></div>' +
+            '<div><div class="s-val">' + state.orders.length + '</div><div class="s-lbl">Paid orders</div></div>' +
+            (taxCollected > 0 ? '<div><div class="s-val">' + fmtMoney(taxCollected) + '</div><div class="s-lbl">Tax collected</div></div>' : '') +
+            '</div>' +
             '<div class="toolbar"><input type="text" id="orderSearch" placeholder="Search by order #, name, email, or item…"><button class="btn-ghost" id="ordersExport">⤓ Export CSV</button></div>' +
             '<div class="table-wrap"><table><thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th></th></tr></thead><tbody id="ordersTbody"></tbody></table></div>' +
             '<p class="panel-note" style="margin-top:14px;">Click a row for the shipping address + build sheet. Up to 25 most recent paid orders; full history in your <a href="https://dashboard.stripe.com" target="_blank" rel="noopener" style="color:var(--a-primary-hover)">Stripe Dashboard</a>.</p>' +
@@ -378,8 +381,16 @@
         var buildBlock = '<div class="od-block od-build"><div class="od-h">Build sheet</div><ul>' + build + '</ul></div>';
         var customNote = o.custom ? '<div class="od-custom">⚑ Custom-graphic order - confirm the customer has emailed their artwork to info@ecoroundholsters.com.</div>' : '';
         var notesBlock = o.notes ? '<div class="od-notes"><div class="od-h">Customer notes</div><div>' + esc(o.notes) + '</div></div>' : '';
+        var shipLabelD = (o.shippingCost === 0) ? 'Free' : fmtMoney(o.shippingCost);
+        var taxRowD = (o.tax > 0) ? '<div class="od-tl"><span>Tax</span><span>' + fmtMoney(o.tax) + '</span></div>' : '';
+        var totalsBlock = (o.subtotal != null) ? '<div class="od-block od-totals"><div class="od-h">Totals</div>' +
+            '<div class="od-tl"><span>Subtotal</span><span>' + fmtMoney(o.subtotal) + '</span></div>' +
+            '<div class="od-tl"><span>Shipping</span><span>' + shipLabelD + '</span></div>' +
+            taxRowD +
+            '<div class="od-tl od-tl-tot"><span>Total</span><span>' + fmtMoney(o.amount_total) + '</span></div>' +
+            '</div>' : '';
         var ref = '<div class="od-ref"><span class="od-ordno">' + esc(o.orderNo || '') + '</span> &middot; ' + esc(o.id) + ' &middot; <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Open in Stripe</a></div>';
-        return '<div class="od-grid">' + ship + contact + buildBlock + '</div>' + notesBlock +
+        return '<div class="od-grid">' + ship + contact + buildBlock + totalsBlock + '</div>' + notesBlock +
             '<div class="od-block od-fulfill" data-ff="' + i + '">' + buildFulfill(o, i) + '</div>' + customNote + ref;
     }
 
@@ -479,8 +490,9 @@
             ordSub.textContent = 'awaiting checkout setup';
             return;
         }
-        var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0); }, 0);
-        revEl.textContent = fmtMoney(revenue); revSub.textContent = 'paid orders (Stripe)';
+        var revenue = state.orders.reduce(function (s, o) { return s + (o.amount_total || 0) - (o.tax || 0); }, 0);
+        var taxCollected = state.orders.reduce(function (s, o) { return s + (o.tax || 0); }, 0);
+        revEl.textContent = fmtMoney(revenue); revSub.textContent = taxCollected > 0 ? 'paid orders, excl. tax' : 'paid orders (Stripe)';
         ordEl.textContent = state.orders.length; ordSub.textContent = 'paid to date';
     }
 

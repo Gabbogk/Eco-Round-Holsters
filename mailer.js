@@ -134,7 +134,7 @@ function esc(s) {
 function money(cents) { return '$' + ((cents || 0) / 100).toFixed(2); }
 
 // order = { orderNo, email, items:[{text, qty, amount}], shipping:{name,line1,line2,city,state,postal_code,country},
-//           subtotal, shippingCost, total, custom(bool), notes(string) }
+//           subtotal, shippingCost, tax, total, custom(bool), notes(string) }
 function renderOrderEmail(order) {
     const o = order || {};
     const items = o.items || [];
@@ -176,6 +176,9 @@ function renderOrderEmail(order) {
         '</td></tr></table></td></tr>' : '';
 
     const shippingLabel = (o.shippingCost === 0) ? 'Free' : money(o.shippingCost);
+    // Tax row only when tax was actually charged (registered locations); omitted otherwise.
+    const taxRow = (o.tax > 0) ?
+        '<tr><td style="padding:4px 0 0;font-size:14px;color:' + muted + ';">Tax</td><td style="padding:4px 0 0;font-size:14px;color:' + ink + ';text-align:right;">' + money(o.tax) + '</td></tr>' : '';
 
     const html =
 '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
@@ -201,6 +204,7 @@ function renderOrderEmail(order) {
       '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + rows +
         '<tr><td style="padding:12px 0 0;font-size:14px;color:' + muted + ';">Subtotal</td><td style="padding:12px 0 0;font-size:14px;color:' + ink + ';text-align:right;">' + money(o.subtotal) + '</td></tr>' +
         '<tr><td style="padding:4px 0 0;font-size:14px;color:' + muted + ';">Shipping</td><td style="padding:4px 0 0;font-size:14px;color:' + ink + ';text-align:right;">' + shippingLabel + '</td></tr>' +
+        taxRow +
         '<tr><td style="padding:10px 0 0;font-size:16px;font-weight:bold;color:' + ink + ';border-top:2px solid #eee;">Total</td><td style="padding:10px 0 0;font-size:16px;font-weight:bold;color:' + ink + ';text-align:right;border-top:2px solid #eee;">' + money(o.total) + '</td></tr>' +
       '</table>' +
     '</td></tr>' +

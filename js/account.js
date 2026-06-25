@@ -102,9 +102,11 @@
         var totals = '';
         if (o.subtotal != null) {
             var shipLabel = (o.shippingCost === 0) ? 'Free' : money(o.shippingCost);
+            var taxLine = (o.tax > 0) ? '<div class="ao-line"><span>Tax</span><span class="ao-amt">' + money(o.tax) + '</span></div>' : '';
             totals = '<div class="ao-totals">' +
                 '<div class="ao-line"><span>Subtotal</span><span class="ao-amt">' + money(o.subtotal) + '</span></div>' +
                 '<div class="ao-line"><span>Shipping</span><span class="ao-amt">' + shipLabel + '</span></div>' +
+                taxLine +
                 '<div class="ao-line ao-tot"><span>Total</span><span class="ao-amt">' + money(o.amount_total) + '</span></div>' +
                 '</div>';
         }
