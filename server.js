@@ -40,6 +40,12 @@ const STRIPE_SESSIONS_URL = 'https://api.stripe.com/v1/checkout/sessions';
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 // Optional: BCC the owner on every confirmation (a free "new order" copy).
 const OWNER_EMAIL = process.env.OWNER_EMAIL || '';
+// Stripe Tax. OFF until set, so deploying this can't add tax to a live order until
+// the owner has (1) added a tax registration in Stripe and (2) set the origin
+// business address under Stripe Tax settings. Flip TAX_ENABLED=true on Railway to
+// turn it on - no code change. When on, checkout enables automatic_tax and Stripe
+// computes the rate from the customer's shipping address (we never hardcode a rate).
+const TAX_ENABLED = /^(1|true|yes|on)$/i.test(process.env.TAX_ENABLED || '');
 
 // --- Admin auth -----------------------------------------------------------
 // Secure mode turns on when ADMIN_PASSWORD is set: the dashboard logs in against
@@ -506,6 +512,9 @@ function handleCheckout(req, res) {
                     price_data: {
                         currency: 'usd',
                         unit_amount: l.unitAmount,
+                        // 'exclusive' = listed price is pre-tax, tax added on top (US sales tax).
+                        // Required by Stripe when automatic_tax is on; dropped from the request when off.
+                        tax_behavior: TAX_ENABLED ? 'exclusive' : undefined,
                         product_data: {
                             name: l.name + (l.gun ? ' - ' + l.gun : ''),
                             description: desc
@@ -517,11 +526,15 @@ function handleCheckout(req, res) {
                 shipping_rate_data: {
                     type: 'fixed_amount',
                     display_name: priced.shipping === 0 ? 'Free shipping' : 'Standard shipping',
-                    fixed_amount: { amount: priced.shipping, currency: 'usd' }
+                    fixed_amount: { amount: priced.shipping, currency: 'usd' },
+                    tax_behavior: TAX_ENABLED ? 'exclusive' : undefined
                 }
             }],
             metadata: meta
         };
+        // Stripe Tax: compute tax from the customer's shipping address (collected
+        // above) for every location where a registration exists. Off by default.
+        if (TAX_ENABLED) params.automatic_tax = { enabled: true };
 
         stripePost(STRIPE_SESSIONS_URL, params).then((r) => {
             if (r.status >= 200 && r.status < 300 && r.json && r.json.url) {
