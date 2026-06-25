@@ -212,7 +212,12 @@
             <div class="opt-group">
                 <div class="opt-label"><span>Add-ons</span></div>
                 <label class="addon"><input type="checkbox" data-key="addon-claw" data-price="5"><span class="nm">Concealment Claw</span><span class="pr">+$5</span></label>
-                <label class="addon"><input type="checkbox" data-key="addon-molding" data-price="10"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
+                <label class="addon"><input type="checkbox" data-key="addon-molding" data-price="10" id="moldingCheck"><span class="nm">Weapon-attachment molding (light/laser)</span><span class="pr">+$10</span></label>
+                <div class="light-pick" id="lightPick">
+                    <div class="gun-selects">
+                        <select id="lightSelect" aria-label="Light or laser model"></select>
+                    </div>
+                </div>
             </div>
 
             <button class="add-cart" id="addCart">Add to Cart - <span id="btnPrice">$55.00</span></button>
@@ -257,7 +262,7 @@
             ['images/products/ecotuck-graphic-patriotic.jpg','Custom Graphic - Patriotic']
         ];
 
-        var state = { finish: 0, hand: 0, clip: 0, addons: 0, gun: '', washer: false, washerPrice: 0, washerColor: 'Red', kydexColor: 'Jet Black', graphic: false };
+        var state = { finish: 0, hand: 0, clip: 0, addons: 0, gun: '', washer: false, washerPrice: 0, washerColor: 'Red', kydexColor: 'Jet Black', light: '', graphic: false };
         var mainImg = document.getElementById('mainImg');
 
         function money(n) { return '$' + n.toFixed(2); }
@@ -305,6 +310,12 @@
             recalc();
         }
         document.querySelectorAll('.addon input').forEach(function (c) { c.addEventListener('change', recalcAddons); });
+        var moldingCheck = document.getElementById('moldingCheck');
+        if (moldingCheck) moldingCheck.addEventListener('change', function () {
+            document.getElementById('lightPick').classList.toggle('show', this.checked);
+        });
+        var lightSelect = document.getElementById('lightSelect');
+        if (lightSelect) lightSelect.addEventListener('change', function () { state.light = this.value; });
 
         // gallery thumbs
         var thumbsEl = document.getElementById('thumbs');
@@ -352,9 +363,20 @@
                 gunMake.focus();
                 return;
             }
+            if (moldingCheck && moldingCheck.checked && !state.light) {
+                msg.className = 'cart-msg err';
+                msg.textContent = 'Please select your light/laser model for the molding.';
+                lightSelect.focus();
+                return;
+            }
             var total = recalc();
             var addons = [];
-            document.querySelectorAll('.addon input').forEach(function (c) { if (c.checked) addons.push(c.parentNode.querySelector('.nm').textContent); });
+            document.querySelectorAll('.addon input').forEach(function (c) {
+                if (!c.checked) return;
+                var nm = c.parentNode.querySelector('.nm').textContent;
+                if (c.dataset.key === 'addon-molding' && state.light) nm = 'Molded for ' + state.light;
+                addons.push(nm);
+            });
             var finishBtn = document.querySelector('#finishRow .opt-btn.active');
             var finishTxt = finishBtn.childNodes[0].textContent.trim();
             if (finishBtn.dataset.key === 'finish-plain') finishTxt += ' (' + state.kydexColor + ')';

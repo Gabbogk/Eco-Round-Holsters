@@ -86,9 +86,33 @@
         if (colors[0] && onPick) onPick(colors[0].name, colors[0].hex);
     }
 
+    // Light/laser models for the "weapon-attachment molding" add-on dropdown.
+    // Edit ONLY this list to add/remove/reorder - it auto-fills #lightSelect on
+    // whichever product pages have the molding add-on (keep it alphabetized).
+    var LIGHTS = [
+        'Olight Baldr Mini',
+        'Olight Baldr Pro',
+        'Olight PL X',
+        'Streamlight TLR-7 HL-X',
+        'Streamlight TLR-7 Sub',
+        'Streamlight TLR-7 X',
+        'Streamlight TLR-8',
+        'Streamlight TLR-9'
+    ];
+    function fillLights() {
+        var sel = document.getElementById('lightSelect');
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Select your light/laser…</option>';
+        LIGHTS.forEach(function (n) {
+            var o = document.createElement('option'); o.textContent = n; sel.appendChild(o);
+        });
+    }
+
     window.EcoSwatch = {
         KYDEX_COLORS: KYDEX_COLORS,
         WASHER_HEX: WASHER_HEX,
+        LIGHTS: LIGHTS,
+        fillLights: fillLights,
         renderKydex: function (container, onPick) { render(container, KYDEX_COLORS, 'kydex', onPick); },
         renderWashers: function (container, names, onPick) {
             if (typeof names === 'function') { onPick = names; names = null; }
@@ -98,4 +122,7 @@
             render(container, list, 'washer', onPick);
         }
     };
+
+    if (document.readyState !== 'loading') fillLights();
+    else document.addEventListener('DOMContentLoaded', fillLights);
 })();

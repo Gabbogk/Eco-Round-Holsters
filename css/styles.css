@@ -729,6 +729,9 @@ ul {
 .gun-selects select option { background: var(--color-bg-card); color: var(--color-text); }
 .gun-missing { display: inline-block; margin-top: 10px; color: var(--color-text-muted); font-size: 0.82rem; text-decoration: underline; }
 .gun-missing:hover { color: var(--color-primary-hover); }
+/* light/laser model picker - revealed when the molding add-on is checked */
+.light-pick { display: none; margin-top: 8px; }
+.light-pick.show { display: block; }
 
 /* Color swatches - Kydex colors + washer colors (js/swatches.js) */
 .swatch-row { display: flex; flex-wrap: wrap; gap: 12px; }

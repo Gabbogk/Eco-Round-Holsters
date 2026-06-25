@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Look Up Your Order | EcoRound Holsters</title>
+    <meta name="robots" content="noindex">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .lk-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 56px 24px;
+            background: radial-gradient(circle at 50% -10%, rgba(248,208,0,.18), transparent 55%), linear-gradient(135deg, #141414 0%, #201c10 50%, #141414 100%); }
+        .lk-logo { transform: scale(1.15); margin-bottom: 30px; }
+        .lk-wrap h1 { font-family: var(--font-heading); font-size: clamp(1.7rem, 4.5vw, 2.5rem); font-weight: 700; letter-spacing: 2px; margin-bottom: 12px; text-align: center; }
+        .lk-lead { max-width: 470px; color: var(--color-text-muted); font-size: .98rem; line-height: 1.7; margin: 0 auto 28px; text-align: center; }
+        .lk-lead a { color: var(--color-primary-hover); }
+        .lk-card { width: 100%; max-width: 440px; background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 24px; }
+        .lk-form label { display: block; font-size: .8rem; color: var(--color-text-muted); margin: 0 0 6px; letter-spacing: .3px; }
+        .lk-form input { width: 100%; padding: 12px 14px; margin-bottom: 16px; background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.2); border-radius: var(--radius); color: #fff; font-size: .92rem; font-family: var(--font-body); }
+        .lk-form input:focus { outline: none; border-color: var(--color-primary); }
+        .lk-form button { width: 100%; }
+        .lk-msg { margin-top: 14px; font-size: .88rem; line-height: 1.6; text-align: center; min-height: 18px; }
+        .lk-msg.err { color: #e07a6b; }
+        .lk-msg.ok { color: var(--color-primary-hover); }
+        .lk-msg a { color: var(--color-primary-hover); }
+        .lk-result { width: 100%; max-width: 440px; }
+        .lk-order { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 22px; margin-top: 20px; }
+        .lk-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+        .lk-no { font-family: var(--font-heading); letter-spacing: 1.5px; font-size: 1.05rem; color: var(--color-primary-hover); }
+        .lk-metad { color: var(--color-text-dim); font-size: .82rem; margin-top: 4px; }
+        .lk-badge { display: inline-block; font-size: .72rem; letter-spacing: .5px; text-transform: uppercase; padding: 4px 11px; border-radius: 20px; border: 1px solid var(--color-primary); color: var(--color-primary-hover); white-space: nowrap; }
+        .lk-badge.shipped { border-color: #5fb87a; color: #7fd49a; }
+        .lk-items { list-style: none; margin: 16px 0 0; padding: 16px 0 0; border-top: 1px solid var(--color-border); display: grid; gap: 8px; }
+        .lk-items li { font-size: .85rem; color: var(--color-text-muted); line-height: 1.5; }
+        .lk-totals { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--color-border); font-size: .92rem; color: var(--color-text); display: flex; justify-content: space-between; }
+        .lk-ship { margin-top: 10px; font-size: .82rem; color: var(--color-text-dim); }
+        .lk-ship a { color: var(--color-primary-hover); }
+        .lk-acct { width: 100%; max-width: 440px; margin-top: 16px; background: rgba(248,208,0,.08); border: 1px solid rgba(248,208,0,.3); border-radius: var(--radius-lg); padding: 20px; text-align: center; }
+        .lk-acct h3 { font-family: var(--font-heading); letter-spacing: .5px; font-size: 1rem; margin-bottom: 8px; color: var(--color-text); }
+        .lk-acct p { font-size: .84rem; color: var(--color-text-muted); line-height: 1.6; margin-bottom: 14px; }
+        .lk-acct strong { color: var(--color-primary-hover); }
+        .lk-foot { margin-top: 28px; }
+        .lk-foot a { color: var(--color-text-dim); font-size: .85rem; }
+        .lk-foot a:hover { color: var(--color-primary-hover); }
+    </style>
+</head>
+<body>
+    <main class="lk-wrap">
+        <a href="/home.html" class="logo lk-logo">
+            <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+            <span class="logo-sub">HOLSTERS</span>
+        </a>
+        <h1>LOOK UP YOUR ORDER</h1>
+        <p class="lk-lead">Enter your order number and the email you used at checkout. Have an account? <a href="/account.html">Sign in</a> to see all your orders.</p>
+
+        <div class="lk-card">
+            <form class="lk-form" id="lookupForm">
+                <label for="loNo">Order number</label>
+                <input id="loNo" type="text" placeholder="ECO-XXXXXXXX" autocomplete="off" required>
+                <label for="loEmail">Email used at checkout</label>
+                <input id="loEmail" type="email" placeholder="you@email.com" autocomplete="email" required>
+                <button type="submit" class="btn btn-primary" id="loBtn">Find my order</button>
+            </form>
+            <div class="lk-msg" id="loMsg"></div>
+        </div>
+
+        <div class="lk-result" id="loResult"></div>
+
+        <div class="lk-foot"><a href="/home.html">&larr; Back to home</a></div>
+    </main>
+
+    <script>
+    (function () {
+        var form = document.getElementById('lookupForm');
+        var msg = document.getElementById('loMsg');
+        var result = document.getElementById('loResult');
+        var btn = document.getElementById('loBtn');
+
+        // Optional deep-link prefill (?order=...&email=...)
+        var qs = new URLSearchParams(location.search);
+        if (qs.get('order')) document.getElementById('loNo').value = qs.get('order');
+        if (qs.get('email')) document.getElementById('loEmail').value = qs.get('email');
+
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function money(c) { return '$' + (Number(c || 0) / 100).toFixed(2); }
+        function fmtDate(unix) { try { return new Date(unix * 1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }); } catch (e) { return ''; } }
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var orderNo = document.getElementById('loNo').value.trim();
+            var email = document.getElementById('loEmail').value.trim();
+            if (!orderNo || !email) { msg.className = 'lk-msg err'; msg.textContent = 'Please enter both your order number and email.'; return; }
+            btn.disabled = true; btn.textContent = 'Looking…'; msg.className = 'lk-msg'; msg.textContent = ''; result.innerHTML = '';
+            fetch('/api/lookup-order', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderNo: orderNo, email: email })
+            }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }, function () { return { status: r.status, j: {} }; }); })
+            .then(function (res) {
+                var j = res.j || {};
+                if (res.status === 429) { msg.className = 'lk-msg err'; msg.textContent = 'Too many tries. Please wait a minute and try again.'; return; }
+                if (res.status === 503 || res.status >= 400) { msg.className = 'lk-msg err'; msg.textContent = j.message || 'Something went wrong. Please try again.'; return; }
+                if (!j.found) {
+                    msg.className = 'lk-msg err';
+                    msg.innerHTML = 'We couldn&rsquo;t find an order with that number and email. Double-check both, or email <a href="mailto:info@ecoroundholsters.com">info@ecoroundholsters.com</a>.';
+                    return;
+                }
+                renderOrder(j.order || {});
+            })
+            .catch(function () { msg.className = 'lk-msg err'; msg.textContent = 'Something went wrong. Please try again.'; })
+            .finally(function () { btn.disabled = false; btn.textContent = 'Find my order'; });
+        });
+
+        function renderOrder(o) {
+            var f = o.fulfillment || {};
+            var shipped = f.status === 'shipped';
+            var items = (o.items || []).map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('');
+            var st = o.shipTo || {};
+            var ship = [st.name, [st.city, st.state].filter(Boolean).join(', ')].filter(Boolean).join(' &middot; ');
+            var track = (shipped && f.trackingUrl)
+                ? '<div class="lk-ship">Tracking: <a href="' + esc(f.trackingUrl) + '" target="_blank" rel="noopener">' + esc(((f.carrier || '') + ' ' + (f.tracking || '')).trim()) + '</a></div>'
+                : '';
+            var acctUrl = '/account.html?email=' + encodeURIComponent(o.email || '');
+            result.innerHTML =
+                '<div class="lk-order">' +
+                    '<div class="lk-head">' +
+                        '<div><div class="lk-no">' + esc(o.orderNo) + '</div><div class="lk-metad">Placed ' + esc(fmtDate(o.created)) + '</div></div>' +
+                        '<span class="lk-badge' + (shipped ? ' shipped' : '') + '">' + (shipped ? 'Shipped' : 'In production') + '</span>' +
+                    '</div>' +
+                    (items ? '<ul class="lk-items">' + items + '</ul>' : '') +
+                    '<div class="lk-totals"><span>Total</span><span>' + money(o.total) + '</span></div>' +
+                    (ship ? '<div class="lk-ship">Ship to: ' + ship + '</div>' : '') +
+                    track +
+                '</div>' +
+                '<div class="lk-acct">' +
+                    '<h3>See all your orders in one place</h3>' +
+                    '<p>Create an account with <strong>' + esc(o.email || '') + '</strong> and this order (plus any future ones) will show in your profile automatically.</p>' +
+                    '<a class="btn btn-primary" href="' + acctUrl + '">Create an account</a>' +
+                '</div>';
+            msg.className = 'lk-msg ok'; msg.textContent = 'Order found.';
+        }
+    })();
+    </script>
+</body>
+</html>

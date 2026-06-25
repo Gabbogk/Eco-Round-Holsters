@@ -203,6 +203,15 @@
         });
     });
 
+    // Arriving from the guest order lookup (?email=...): jump to Create Account + prefill.
+    (function () {
+        var pre = new URLSearchParams(window.location.search).get('email');
+        if (!pre) return;
+        var tab = document.querySelector('.acct-tab[data-tab="signup"]');
+        if (tab) tab.click();
+        if (el('suEmail')) el('suEmail').value = pre.trim();
+    })();
+
     // --- sign in ---
     el('signinForm').addEventListener('submit', function (e) {
         e.preventDefault();

@@ -1064,6 +1064,57 @@ function serveStatic(req, res, urlPath) {
     });
 }
 
+// POST /api/lookup-order { orderNo, email } -> a single guest order's status, but
+// ONLY when the order number AND the checkout email both match. Lets a guest (no
+// account) check an order; returns a generic { found:false } so an order number
+// can't be probed without also knowing the matching email.
+function handleLookupOrder(req, res) {
+    if (!STRIPE_SECRET_KEY) {
+        return sendJson(res, 503, { error: 'unconfigured', message: 'Order lookup isn’t available yet. Email info@ecoroundholsters.com and we’ll help.' });
+    }
+    readJsonBody(req, (err, data) => {
+        if (err) return sendJson(res, 400, { error: 'bad_request' });
+        const email = (data && typeof data.email === 'string') ? data.email.trim().toLowerCase() : '';
+        let key = (data && typeof data.orderNo === 'string' ? data.orderNo : '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (key && key.indexOf('ECO') !== 0) key = 'ECO' + key; // tolerate a missing "ECO-" prefix
+        if (!key || !/.+@.+\..+/.test(email)) {
+            return sendJson(res, 400, { error: 'bad_input', message: 'Enter your order number and the email you used at checkout.' });
+        }
+        const url = 'https://api.stripe.com/v1/checkout/sessions?limit=100&expand[]=data.payment_intent';
+        stripeGet(url).then((r) => {
+            if (r.status >= 300 || !r.json) return sendJson(res, 502, { error: 'stripe_error' });
+            const match = (r.json.data || []).find((s) => {
+                if (s.payment_status !== 'paid') return false;
+                const e = (s.customer_details && s.customer_details.email) ? s.customer_details.email.toLowerCase() : '';
+                if (e !== email) return false;
+                const no = ((s.metadata && s.metadata.order_no) || orderNumber(s.id)).toUpperCase().replace(/[^A-Z0-9]/g, '');
+                return no === key;
+            });
+            if (!match) return sendJson(res, 200, { found: false });
+            const s = match;
+            const cd = s.customer_details || {};
+            const sd = s.shipping_details || s.shipping || (s.collected_information && s.collected_information.shipping_details) || null;
+            const addr = (sd && sd.address) || cd.address || {};
+            const meta = s.metadata || {};
+            const config = [];
+            for (let i = 0; i < 50; i++) { if (meta['item_' + i]) config.push(meta['item_' + i]); else break; }
+            sendJson(res, 200, {
+                found: true,
+                order: {
+                    orderNo: meta.order_no || orderNumber(s.id),
+                    created: s.created,
+                    total: s.amount_total,
+                    currency: s.currency,
+                    email: cd.email || email,
+                    items: config,
+                    shipTo: { name: (sd && sd.name) || cd.name || '', city: addr.city || '', state: addr.state || '' },
+                    fulfillment: fulfillmentOf(s)
+                }
+            });
+        }).catch(() => sendJson(res, 502, { error: 'upstream_error' }));
+    });
+}
+
 // Per-IP, per-minute caps for the API endpoints that don't set their own (tighter)
 // limit inside the handler. Caps are generous so real users never hit them - they
 // exist to stop flood/amplification, especially on the endpoints that make outbound
@@ -1079,6 +1130,7 @@ const API_LIMITS = {
     '/api/signups': 30,        // admin
     '/api/firearm-request': 10, // public submit
     '/api/firearm-requests': 30, // admin
+    '/api/lookup-order': 15,    // public; lists Stripe sessions - modest vs probing
     '/api/stripe-webhook': 300 // signature-gated; generous for legit Stripe bursts
 };
 
@@ -1103,6 +1155,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && urlPath === '/api/prices') return handleSavePrices(req, res);
     if (req.method === 'POST' && urlPath === '/api/firearm-request') return handleFirearmRequest(req, res);
     if (req.method === 'POST' && urlPath === '/api/firearm-requests') return handleFirearmRequestsList(req, res);
+    if (req.method === 'POST' && urlPath === '/api/lookup-order') return handleLookupOrder(req, res);
 
     serveStatic(req, res, urlPath);
 });
