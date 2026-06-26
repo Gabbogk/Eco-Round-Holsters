@@ -833,6 +833,19 @@ ul {
 .kydex-color .swatch-row::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
 .kydex-color .swatch-row::-webkit-scrollbar-thumb:hover { background: var(--color-text-dim); }
 
+/* Custom-graphic design picker: stock designs + "email my own", shown when a
+   Custom Graphic finish is selected. Horizontal scroller like the color swatches. */
+.graphic-designs { margin-bottom: 18px; }
+.graphic-row { display: flex; flex-wrap: nowrap; gap: 14px; overflow-x: auto; overflow-y: hidden; padding: 8px 4px 12px; scrollbar-width: thin; scrollbar-color: var(--color-border) var(--color-bg-card); }
+.graphic-pick { flex: 0 0 auto; width: 78px; background: none; border: none; padding: 0; cursor: pointer; text-align: center; }
+.graphic-thumb { display: flex; align-items: center; justify-content: center; width: 74px; height: 74px; border-radius: 10px; background-size: cover; background-position: center; background-color: var(--color-bg-card); border: 2px solid var(--color-border); font-size: 1.5rem; color: var(--color-text-muted); transition: border-color .15s; }
+.graphic-pick.active .graphic-thumb { border-color: var(--color-primary); box-shadow: inset 0 0 0 2px var(--color-primary); }
+.graphic-label { display: block; font-size: .72rem; color: var(--color-text-muted); margin-top: 6px; line-height: 1.2; }
+.graphic-pick.active .graphic-label { color: var(--color-primary-hover); font-weight: 600; }
+.graphic-row::-webkit-scrollbar { height: 8px; }
+.graphic-row::-webkit-scrollbar-track { background: var(--color-bg-card); border-radius: 4px; }
+.graphic-row::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 4px; }
+
 .finder-stats {
     display: flex;
     gap: 40px;

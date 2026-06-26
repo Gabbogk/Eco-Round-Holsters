@@ -108,8 +108,49 @@
         });
     }
 
+    // Pre-made custom-graphic designs shown in the configurator when a Custom
+    // Graphic finish is picked. To add a design, drop its image in
+    // images/products/ and add a { name, img } line here - that's it.
+    var GRAPHICS = [
+        { name: 'Leopard', img: 'images/products/ecotuck-graphic-leopard.jpg' },
+        { name: 'Thin Blue Line', img: 'images/products/ecotuck-graphic-blueline.jpg' },
+        { name: 'Patriotic (America 250)', img: 'images/products/ecotuck-graphic-patriotic.jpg' }
+    ];
+    // Render the design picker: stock designs + an "email my own" option. onPick(name,
+    // isOwn) fires on each pick and once for the default (first design).
+    function renderGraphics(container, onPick) {
+        if (!container) return;
+        container.innerHTML = '';
+        var items = GRAPHICS.concat([{ name: 'Email my own design', own: true }]);
+        items.forEach(function (g, i) {
+            var cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'graphic-pick' + (i === 0 ? ' active' : '');
+            cell.setAttribute('title', g.name);
+            var thumb = document.createElement('span');
+            thumb.className = 'graphic-thumb' + (g.own ? ' graphic-own' : '');
+            if (g.img) thumb.style.backgroundImage = "url('" + g.img + "')";
+            else thumb.textContent = '✉';
+            var label = document.createElement('span');
+            label.className = 'graphic-label';
+            label.textContent = g.own ? 'My own' : g.name;
+            cell.appendChild(thumb);
+            cell.appendChild(label);
+            cell.addEventListener('click', function () {
+                var cur = container.querySelector('.graphic-pick.active');
+                if (cur) cur.classList.remove('active');
+                cell.classList.add('active');
+                if (onPick) onPick(g.name, !!g.own);
+            });
+            container.appendChild(cell);
+        });
+        if (items[0] && onPick) onPick(items[0].name, !!items[0].own);
+    }
+
     window.EcoSwatch = {
         KYDEX_COLORS: KYDEX_COLORS,
+        GRAPHICS: GRAPHICS,
+        renderGraphics: renderGraphics,
         WASHER_HEX: WASHER_HEX,
         LIGHTS: LIGHTS,
         fillLights: fillLights,

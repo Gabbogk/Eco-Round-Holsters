@@ -141,6 +141,10 @@
                     <button class="opt-btn" data-key="finish-graphic-kydex" data-price="15" data-graphic="1">Custom Graphic - Kydex <span class="add">+$15</span></button>
                     <button class="opt-btn" data-key="finish-graphic-carbon" data-price="20" data-graphic="1">Custom Graphic - Carbon <span class="add">+$20</span></button>
                 </div>
+                <div class="graphic-designs" id="graphicDesignBlock" hidden>
+                    <div class="opt-label" style="margin-top:6px;"><span>Choose a design</span></div>
+                    <div class="graphic-row" id="graphicDesigns"></div>
+                </div>
                 <div class="graphic-note" id="graphicNote">After checkout, email your image or chosen design to <strong>info@ecoroundholsters.com</strong> (or we'll reach out) so we can build your custom graphic.</div>
             </div>
 
@@ -224,7 +228,7 @@
             'FN 509','FN 509 Tactical'
         ];
 
-        var state = { finish: 0, hand: 0, clip: 0, addons: 0, gun: '', washer: false, washerPrice: 0, washerColor: 'Red', kydexColor: 'Jet Black', light: '', graphic: false };
+        var state = { finish: 0, hand: 0, clip: 0, addons: 0, gun: '', washer: false, washerPrice: 0, washerColor: 'Red', kydexColor: 'Jet Black', light: '', graphic: false, graphicDesign: '', graphicOwn: false };
 
         function money(n) { return '$' + n.toFixed(2); }
         function recalc() {
@@ -248,6 +252,16 @@
             state.finish = parseFloat(btn.dataset.price);
             state.graphic = !!btn.dataset.graphic;
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
+            var gBlk = document.getElementById('graphicDesignBlock');
+            if (state.graphic) {
+                gBlk.hidden = false;
+                EcoSwatch.renderGraphics(document.getElementById('graphicDesigns'), function (nm, own) {
+                    state.graphicDesign = nm; state.graphicOwn = own;
+                    document.getElementById('graphicNote').innerHTML = own
+                        ? 'After checkout, email your artwork to <strong>info@ecoroundholsters.com</strong> so we can build it.'
+                        : 'We will build your holster with the <strong>' + nm + '</strong> design. Reply to your order email to tweak it.';
+                });
+            } else { gBlk.hidden = true; }
             document.getElementById('kydexColorBlock').classList.toggle('show', !btn.dataset.graphic);
             document.getElementById('colorLabel').textContent = btn.dataset.key === 'finish-carbon-2sided' ? 'Inside Color (outside is Black Carbon Fiber)' : 'Color';
             EcoSwatch.renderKydex(document.getElementById('kydexColors'), function (name) { state.kydexColor = name; }, btn.dataset.key === 'finish-carbon-2sided' ? ['Black'] : null);
@@ -314,6 +328,7 @@
             var finishTxt = finishBtn.childNodes[0].textContent.trim();
             if (finishBtn.dataset.key === 'finish-carbon-2sided') finishTxt += ' (Outside Black Carbon Fiber / Inside ' + state.kydexColor + ')';
             else if (!finishBtn.dataset.graphic) finishTxt += ' (' + state.kydexColor + ')';
+            else finishTxt += ' (' + (state.graphicOwn ? 'Your own design' : state.graphicDesign) + ')';
             var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
             var clipTxt = document.querySelector('#clipRow .opt-btn.active').childNodes[0].textContent.trim();
             var washerTxt = state.washer ? ('Colored Washers (' + state.washerColor + ')') : 'Standard Washers';
