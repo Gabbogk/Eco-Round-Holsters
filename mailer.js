@@ -14,6 +14,7 @@
  * ==========================================================================*/
 'use strict';
 const tls = require('tls');
+const https = require('https');
 
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || '465', 10);
@@ -21,22 +22,123 @@ const SMTP_USER = process.env.SMTP_USER || '';
 const SMTP_PASS = process.env.SMTP_PASS || '';
 const FROM_NAME = process.env.SMTP_FROM_NAME || 'EcoRound Holsters';
 
-// True once SMTP creds are present. The webhook checks this so the feature is a
-// safe no-op until the owner sets SMTP_PASS on Railway.
-function mailerReady() { return !!(SMTP_USER && SMTP_PASS); }
+// HTTP email APIs send over HTTPS (port 443), so they work on hosts that block
+// outbound SMTP - Railway blocks 465, which is why raw SMTP failed in production
+// with a blank connection error. SendGrid is the active transport: its domain
+// auth uses CNAME records (which Wix supports), whereas Resend needed a subdomain
+// MX that Wix can't add. RESEND_API_KEY is kept as an optional alternative.
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+// The verified-domain sender ("Name <email>"). Override with MAIL_FROM if needed.
+const MAIL_FROM = process.env.MAIL_FROM || (FROM_NAME + ' <info@ecoroundholsters.com>');
+
+// True once SOME transport is configured. The webhook checks this so the feature
+// is a safe no-op until one is set.
+function mailerReady() { return !!(SENDGRID_API_KEY || RESEND_API_KEY || (SMTP_USER && SMTP_PASS)); }
+
+// Route to the preferred transport: SendGrid, then Resend, then the raw-SMTP fallback.
+function sendMail(opts) {
+    if (SENDGRID_API_KEY) return sendViaSendGrid(opts);
+    if (RESEND_API_KEY) return sendViaResend(opts);
+    return sendViaSmtp(opts);
+}
+
+// Split a "Name <email>" string into SendGrid's {email, name} shape.
+function parseFrom(s) {
+    const m = String(s || '').match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+    return m ? { email: hdr(m[2]), name: hdr(m[1]) || undefined } : { email: hdr(s) };
+}
+
+// Send one HTML email via the SendGrid v3 API (POST /v3/mail/send). Zero-dependency
+// HTTPS request - resolves on a 2xx (SendGrid returns 202), rejects otherwise.
+function sendViaSendGrid(opts) {
+    return new Promise((resolve, reject) => {
+        const to = hdr(opts.to);
+        if (to.indexOf('@') < 1) return reject(new Error('bad_recipient'));
+        const pers = { to: [{ email: to }] };
+        const bcc = hdr(opts.bcc || '');
+        if (bcc.indexOf('@') > 0) pers.bcc = [{ email: bcc }];
+        const payload = {
+            personalizations: [pers],
+            from: parseFrom(opts.from || MAIL_FROM),
+            subject: hdr(opts.subject),
+            content: [{ type: 'text/html', value: String(opts.html || '') }]
+        };
+        const replyTo = hdr(opts.replyTo || '');
+        if (replyTo.indexOf('@') > 0) payload.reply_to = { email: replyTo };
+        const body = JSON.stringify(payload);
+        const req = https.request('https://api.sendgrid.com/v3/mail/send', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + SENDGRID_API_KEY,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            }
+        }, (resp) => {
+            let data = '';
+            resp.on('data', (c) => { data += c; });
+            resp.on('end', () => {
+                if (resp.statusCode >= 200 && resp.statusCode < 300) return resolve(true);
+                let msg = 'sendgrid_' + resp.statusCode;
+                try { const j = JSON.parse(data); if (j && j.errors && j.errors[0] && j.errors[0].message) msg += ': ' + j.errors[0].message; } catch (e) { /* ignore */ }
+                reject(new Error(msg));
+            });
+        });
+        req.on('error', reject);
+        req.setTimeout(20000, () => { req.destroy(new Error('sendgrid_timeout')); });
+        req.write(body);
+        req.end();
+    });
+}
+
+// Send one HTML email via the Resend HTTP API (POST /emails). Zero-dependency
+// HTTPS request - resolves on a 2xx, rejects with the Resend error otherwise.
+function sendViaResend(opts) {
+    return new Promise((resolve, reject) => {
+        const to = hdr(opts.to);
+        if (to.indexOf('@') < 1) return reject(new Error('bad_recipient'));
+        const payload = { from: opts.from || MAIL_FROM, to: [to], subject: hdr(opts.subject), html: String(opts.html || '') };
+        const replyTo = hdr(opts.replyTo || '');
+        if (replyTo.indexOf('@') > 0) payload.reply_to = replyTo;
+        const bcc = hdr(opts.bcc || '');
+        if (bcc.indexOf('@') > 0) payload.bcc = [bcc];
+        const body = JSON.stringify(payload);
+        const req = https.request('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + RESEND_API_KEY,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            }
+        }, (resp) => {
+            let data = '';
+            resp.on('data', (c) => { data += c; });
+            resp.on('end', () => {
+                if (resp.statusCode >= 200 && resp.statusCode < 300) return resolve(true);
+                let msg = 'resend_' + resp.statusCode;
+                try { const j = JSON.parse(data); if (j && (j.message || j.name)) msg += ': ' + (j.message || j.name); } catch (e) { /* ignore */ }
+                reject(new Error(msg));
+            });
+        });
+        req.on('error', reject);
+        req.setTimeout(20000, () => { req.destroy(new Error('resend_timeout')); });
+        req.write(body);
+        req.end();
+    });
+}
 
 // Strip CR/LF and control chars from a value placed in an SMTP/RFC822 header line,
 // so an attacker-influenced field (recipient, subject) can never inject extra
 // headers or smuggle body content. Header values are single-line by definition.
 function hdr(s) { return String(s == null ? '' : s).replace(/[\r\n\t\f\v\0]+/g, ' ').trim(); }
 
-// Send one HTML email over an implicit-TLS SMTP connection. Resolves once the
-// message is accepted (250 after the body); rejects on any unexpected reply,
-// socket error, or timeout. Lockstep conversation - we send the next command
-// only after the expected reply for the previous one.
-function sendMail(opts) {
+// Send one HTML email over an implicit-TLS SMTP connection (FALLBACK transport;
+// Resend is preferred). Resolves once the message is accepted (250 after the body);
+// rejects on any unexpected reply, socket error, or timeout. NOTE: many PaaS hosts
+// (incl. Railway) block outbound SMTP ports, so this fails there - hence Resend.
+function sendViaSmtp(opts) {
     return new Promise((resolve, reject) => {
-        if (!mailerReady()) return reject(new Error('smtp_not_configured'));
+        if (!(SMTP_USER && SMTP_PASS)) return reject(new Error('smtp_not_configured'));
         const to = hdr(opts.to);
         if (to.indexOf('@') < 1) return reject(new Error('bad_recipient'));
         const bcc = hdr(opts.bcc);
