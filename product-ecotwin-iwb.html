@@ -249,7 +249,7 @@
             state.graphic = !!btn.dataset.graphic;
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
             document.getElementById('kydexColorBlock').classList.toggle('show', !btn.dataset.graphic);
-            document.getElementById('colorLabel').textContent = btn.dataset.key === 'finish-carbon-2sided' ? 'Inside Color (outside is Black)' : 'Color';
+            document.getElementById('colorLabel').textContent = btn.dataset.key === 'finish-carbon-2sided' ? 'Inside Color (outside is Black Carbon Fiber)' : 'Color';
         });
         wireRow('handRow', function (btn) { state.hand = parseFloat(btn.dataset.price); });
         wireRow('clipRow', function (btn) { state.clip = parseFloat(btn.dataset.price); });
@@ -311,7 +311,7 @@
             });
             var finishBtn = document.querySelector('#finishRow .opt-btn.active');
             var finishTxt = finishBtn.childNodes[0].textContent.trim();
-            if (finishBtn.dataset.key === 'finish-carbon-2sided') finishTxt += ' (Outside Black / Inside ' + state.kydexColor + ')';
+            if (finishBtn.dataset.key === 'finish-carbon-2sided') finishTxt += ' (Outside Black Carbon Fiber / Inside ' + state.kydexColor + ')';
             else if (!finishBtn.dataset.graphic) finishTxt += ' (' + state.kydexColor + ')';
             var handTxt = document.querySelector('#handRow .opt-btn.active').textContent.trim();
             var clipTxt = document.querySelector('#clipRow .opt-btn.active').childNodes[0].textContent.trim();
