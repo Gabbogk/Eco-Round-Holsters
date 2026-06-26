@@ -112,9 +112,8 @@
     // Graphic finish is picked. To add a design, drop its image in
     // images/products/ and add a { name, img } line here - that's it.
     var GRAPHICS = [
-        { name: 'Leopard', img: 'images/products/ecotuck-graphic-leopard.jpg' },
-        { name: 'Thin Blue Line', img: 'images/products/ecotuck-graphic-blueline.jpg' },
-        { name: 'Patriotic (America 250)', img: 'images/products/ecotuck-graphic-patriotic.jpg' }
+        { name: '250th Anniversary', img: 'images/products/ecodraw-patriotic.jpg' }
+        // More designs coming - owner will provide photos; add { name, img } lines here.
     ];
     // Render the design picker: stock designs + an "email my own" option. onPick(name,
     // isOwn) fires on each pick and once for the default (first design).
