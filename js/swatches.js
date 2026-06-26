@@ -112,7 +112,7 @@
     // Graphic finish is picked. To add a design, drop its image in
     // images/products/ and add a { name, img } line here - that's it.
     var GRAPHICS = [
-        { name: '250th Anniversary', img: 'images/products/ecodraw-patriotic.jpg' }
+        { name: '250th Anniversary', img: 'images/products/graphic-250-anniversary.jpg' }
         // More designs coming - owner will provide photos; add { name, img } lines here.
     ];
     // Render the design picker: stock designs + an "email my own" option. onPick(name,
@@ -120,7 +120,7 @@
     function renderGraphics(container, onPick) {
         if (!container) return;
         container.innerHTML = '';
-        var items = GRAPHICS.concat([{ name: 'Email my own design', own: true }]);
+        var items = [{ name: 'Email my own design', own: true }].concat(GRAPHICS);
         items.forEach(function (g, i) {
             var cell = document.createElement('button');
             cell.type = 'button';
