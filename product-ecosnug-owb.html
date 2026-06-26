@@ -267,6 +267,7 @@
             document.getElementById('graphicNote').classList.toggle('show', state.graphic);
             document.getElementById('kydexColorBlock').classList.toggle('show', !btn.dataset.graphic);
             document.getElementById('colorLabel').textContent = btn.dataset.key === 'finish-carbon-2sided' ? 'Inside Color (outside is Black Carbon Fiber)' : 'Color';
+            EcoSwatch.renderKydex(document.getElementById('kydexColors'), function (name) { state.kydexColor = name; }, btn.dataset.key === 'finish-carbon-2sided' ? ['Black'] : null);
         });
         wireRow('handRow', function (btn) { state.hand = parseFloat(btn.dataset.price); });
         wireRow('loopRow', function (btn) { state.loop = parseFloat(btn.dataset.price); });

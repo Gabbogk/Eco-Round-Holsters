@@ -113,7 +113,18 @@
         WASHER_HEX: WASHER_HEX,
         LIGHTS: LIGHTS,
         fillLights: fillLights,
-        renderKydex: function (container, onPick) { render(container, KYDEX_COLORS, 'kydex', onPick); },
+        renderKydex: function (container, onPick, exclude) {
+            if (!container) return;
+            // Guard: only re-render when the excluded set changes, so switching
+            // between non-double-sided finishes doesn't needlessly reset the color.
+            var key = (exclude && exclude.length) ? exclude.slice().sort().join('|') : '';
+            if (container.getAttribute('data-excl') === key) return;
+            container.setAttribute('data-excl', key);
+            var list = (exclude && exclude.length)
+                ? KYDEX_COLORS.filter(function (c) { return exclude.indexOf(c.name) === -1; })
+                : KYDEX_COLORS;
+            render(container, list, 'kydex', onPick);
+        },
         renderWashers: function (container, names, onPick) {
             if (typeof names === 'function') { onPick = names; names = null; }
             var list = (names && names.length ? names : DEFAULT_WASHERS).map(function (n) {
