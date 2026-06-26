@@ -3,259 +3,496 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EcoRound Holsters | Coming Soon</title>
-    <meta name="description" content="EcoRound Holsters - premium handcrafted holsters, launching soon. Sign up to be the first to know.">
+    <title>EcoRound Holsters | Premium Handcrafted Holsters</title>
+    <meta name="description" content="Premium handcrafted holsters for 400+ gun models. IWB, OWB, and hybrid holsters with lifetime warranty. Made in America.">
     <link rel="canonical" href="https://www.ecoroundholsters.com/">
     <meta name="theme-color" content="#1a1a1a">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Open Graph / social sharing -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="EcoRound Holsters">
     <meta property="og:title" content="EcoRound Holsters | Premium Handcrafted Holsters">
-    <meta property="og:description" content="Premium handcrafted holsters, launching soon. Custom-molded to 400+ firearms, made in America. Sign up to be the first to know.">
+    <meta property="og:description" content="Premium handcrafted holsters for 400+ gun models. IWB, OWB, and hybrid holsters with lifetime warranty. Made in America.">
     <meta property="og:url" content="https://www.ecoroundholsters.com/">
     <meta property="og:image" content="https://www.ecoroundholsters.com/images/products/ecotuck-black.jpg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="EcoRound Holsters | Premium Handcrafted Holsters">
-    <meta name="twitter:description" content="Premium handcrafted holsters, launching soon. Custom-molded to 400+ firearms, made in America.">
+    <meta name="twitter:description" content="Premium handcrafted holsters for 400+ gun models. IWB, OWB, and hybrid holsters with lifetime warranty. Made in America.">
     <meta name="twitter:image" content="https://www.ecoroundholsters.com/images/products/ecotuck-black.jpg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
-    <style>
-        /* ===== Coming Soon page layout (reuses tokens from styles.css) ===== */
-        .cs-wrap {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 56px 24px;
-            background:
-                radial-gradient(circle at 50% -10%, rgba(248, 208, 0, 0.18), transparent 55%),
-                linear-gradient(135deg, #141414 0%, #201c10 50%, #141414 100%);
-        }
-
-        .cs-logo {
-            transform: scale(1.4);
-            margin-bottom: 44px;
-        }
-
-        .cs-badge {
-            display: inline-block;
-            background: var(--color-primary); color: #1a1a1a;
-            padding: 6px 18px;
-            font-family: var(--font-heading);
-            font-size: 0.8rem;
-            font-weight: 600;
-            letter-spacing: 3px;
-            border-radius: 4px;
-            margin-bottom: 24px;
-        }
-
-        .cs-wrap h1 {
-            font-family: var(--font-heading);
-            font-size: clamp(2.5rem, 8vw, 5rem);
-            font-weight: 700;
-            letter-spacing: 4px;
-            line-height: 1.05;
-            margin-bottom: 20px;
-        }
-
-        .cs-wrap h1 .accent {
-            color: var(--color-primary);
-        }
-
-        .cs-lead {
-            max-width: 560px;
-            color: var(--color-text-muted);
-            font-size: 1.1rem;
-            line-height: 1.75;
-            margin: 0 auto 36px;
-        }
-
-        .cs-form {
-            display: flex;
-            gap: 12px;
-            max-width: 460px;
-            width: 100%;
-            margin: 0 auto 14px;
-        }
-
-        .cs-form input {
-            flex: 1;
-            padding: 14px 18px;
-            background: rgba(0, 0, 0, 0.35);
-            border: 1px solid var(--color-border);
-            border-radius: var(--radius);
-            color: var(--color-text);
-            font-size: 0.95rem;
-            font-family: var(--font-body);
-            outline: none;
-            transition: var(--transition);
-        }
-
-        .cs-form input:focus {
-            border-color: var(--color-primary);
-        }
-
-        .cs-note {
-            color: var(--color-text-dim);
-            font-size: 0.82rem;
-            margin-bottom: 24px;
-        }
-
-        .cs-contact {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            color: var(--color-text-muted);
-            font-size: 0.95rem;
-            margin-bottom: 52px;
-        }
-
-        .cs-contact svg {
-            color: var(--color-primary);
-            flex-shrink: 0;
-        }
-
-        .cs-contact a {
-            color: var(--color-primary-hover);
-            font-weight: 600;
-        }
-
-        .cs-contact a:hover {
-            text-decoration: underline;
-        }
-
-        .cs-trust {
-            display: flex;
-            gap: 44px;
-            flex-wrap: wrap;
-            justify-content: center;
-            margin-bottom: 48px;
-        }
-
-        .cs-trust-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .cs-trust-item svg {
-            color: var(--color-primary);
-        }
-
-        .cs-trust-item strong {
-            font-family: var(--font-heading);
-            font-size: 0.95rem;
-            letter-spacing: 1px;
-        }
-
-        .cs-trust-item span {
-            font-size: 0.8rem;
-            color: var(--color-text-muted);
-        }
-
-        .cs-social {
-            margin-bottom: 32px;
-        }
-
-        .cs-footer {
-            color: var(--color-text-dim);
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 560px) {
-            .cs-form { flex-direction: column; }
-            .cs-logo { transform: scale(1.2); }
-            .cs-trust { gap: 28px; }
-        }
-    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "EcoRound Holsters",
+      "url": "https://www.ecoroundholsters.com/",
+      "logo": "https://www.ecoroundholsters.com/favicon.svg",
+      "description": "Premium handcrafted Kydex holsters custom-molded to 400+ firearm models. Made in America.",
+      "email": "info@ecoroundholsters.com"
+    }
+    </script>
 </head>
 <body>
-    <main class="cs-wrap">
-        <a href="/" class="logo cs-logo">
-            <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
-            <span class="logo-sub">HOLSTERS</span>
-        </a>
+    <a href="#main" class="skip-link">Skip to main content</a>
 
-        <span class="cs-badge">EARLY ORDERS OPEN</span>
-        <h1>COMING <span class="accent">SOON</span></h1>
-        <p class="cs-lead">We're putting the finishing touches on something built for everyday carry. Premium handcrafted holsters - engineered for comfort, built for reliability, and designed for your exact firearm.</p>
+    <!-- Top Promo Bar -->
+    <div class="promo-bar">
+        <div class="container">
+            <p><strong>FREE SHIPPING</strong> on all orders over $100 &nbsp;|&nbsp; <strong>LIFETIME WARRANTY</strong> on every holster</p>
+        </div>
+    </div>
 
-        <form class="cs-form" id="notifyForm">
-            <input type="email" placeholder="Enter your email" required aria-label="Email address">
-            <button type="submit" class="btn btn-primary">Notify Me</button>
-        </form>
-        <p class="cs-note" id="notifyNote">Be the first to know when we launch. No spam, ever.</p>
-
-        <p class="cs-contact">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
-            <span>Questions or early order requests? Email us at <a href="mailto:info@ecoroundholsters.com">info@ecoroundholsters.com</a></span>
-        </p>
-
-        <div class="cs-trust">
-            <div class="cs-trust-item">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                <strong>Lifetime Warranty</strong>
-                <span>On every holster</span>
-            </div>
-            <div class="cs-trust-item">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                <strong>Handcrafted in America</strong>
-                <span>Made in the USA</span>
-            </div>
-            <div class="cs-trust-item">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h18v10H3z"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg>
-                <strong>400+ Gun Models</strong>
-                <span>Custom-fit options</span>
+    <!-- Header -->
+    <header class="header" id="header">
+        <div class="container header-inner">
+            <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <a href="/" class="logo">
+                <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+                <span class="logo-sub">HOLSTERS</span>
+            </a>
+            <nav class="nav" id="mainNav">
+                <ul class="nav-list">
+                    <li class="nav-item"><a href="shop.html" class="nav-link">Shop All</a></li>
+                    <li class="nav-item has-dropdown">
+                        <a href="shop.html" class="nav-link">Gun Holsters</a>
+                        <div class="dropdown">
+                            <a href="product-ecotuck-iwb.html">EcoTuck IWB</a>
+                            <a href="product-ecotwin-iwb.html">EcoTwin Sidecar</a>
+                            <a href="product-ecosnug-owb.html">EcoSnug OWB</a>
+                            <a href="product-ecodraw-owb.html">EcoDraw OWB</a>
+                        </div>
+                    </li>
+                    <li class="nav-item has-dropdown">
+                        <a href="shop.html" class="nav-link">Equipment Holsters</a>
+                        <div class="dropdown">
+                            <a href="product-enforcer.html">Lock n Load</a>
+                            <a href="product-suupack.html">Suu Pack</a>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+            <div class="header-actions">
+                <button class="icon-btn search-btn" aria-label="Search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </button>
+                <button class="icon-btn cart-btn" aria-label="Cart">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                    <span class="cart-count">0</span>
+                </button>
             </div>
         </div>
+    </header>
 
-        <div class="social-links cs-social">
-            <a href="https://www.facebook.com/profile.php?id=61590678295982" target="_blank" rel="noopener" aria-label="Facebook">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-            </a>
-            <a href="https://www.instagram.com/ecoroundholsters" target="_blank" rel="noopener" aria-label="Instagram">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
-            </a>
+    <main id="main" tabindex="-1">
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-slider" id="heroSlider">
+            <!-- Holster of the Month: 250th Anniversary (America 250) EcoDraw build -->
+            <div class="hero-slide hotm-slide active" style="background-image: linear-gradient(135deg, #0f0f0f 0%, #16213e 55%, #0f0f0f 100%);">
+                <div class="container hero-content">
+                    <span class="hero-badge">HOLSTER OF THE MONTH</span>
+                    <h1>250TH ANNIVERSARY<br>EDITION</h1>
+                    <p>1776-2026. The EcoDraw OWB in our America 250 graphic - Old Glory, the Statue of Liberty, and fireworks.</p>
+                    <div class="hero-ctas">
+                        <a href="product-ecodraw-owb.html" class="btn btn-primary">Shop the EcoDraw</a>
+                        <a href="shop.html" class="btn btn-outline">Shop All</a>
+                    </div>
+                </div>
+                <img src="images/products/ecodraw-patriotic.jpg" alt="EcoDraw OWB holster with a 250th Anniversary of the United States graphic - American flag, Statue of Liberty, and fireworks" class="hotm-img">
+            </div>
+            <div class="hero-slide" style="background-image: linear-gradient(135deg, #1a1a1a 0%, #3a3320 50%, #1a1a1a 100%);">
+                <div class="container hero-content">
+                    <span class="hero-badge">NEW COLLECTION</span>
+                    <h1>PRECISION-CRAFTED<br>HOLSTERS</h1>
+                    <p>Engineered for comfort. Built for reliability. Designed for your exact firearm.</p>
+                    <div class="hero-ctas">
+                        <a href="shop.html" class="btn btn-primary">Shop Now</a>
+                        <a href="shop.html" class="btn btn-outline">Find Your Fit</a>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-slide" style="background-image: linear-gradient(135deg, #1a1a1a 0%, #3a2d2d 50%, #1a1a1a 100%);">
+                <div class="container hero-content">
+                    <span class="hero-badge">MADE TO ORDER</span>
+                    <h1>CUSTOM-MOLDED<br>TO YOUR FIREARM</h1>
+                    <p>Handcrafted Kydex, built to your exact firearm and carry style.</p>
+                    <div class="hero-ctas">
+                        <a href="shop.html" class="btn btn-primary">Shop Now</a>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-slide" style="background-image: linear-gradient(135deg, #1a1a1a 0%, #2d2d3a 50%, #1a1a1a 100%);">
+                <div class="container hero-content">
+                    <span class="hero-badge">BEST SELLER</span>
+                    <h1>THE ECOTUCK<br>IWB HOLSTER</h1>
+                    <p>Our most popular inside-the-waistband holster. Starting at $55.</p>
+                    <div class="hero-ctas">
+                        <a href="product-ecotuck-iwb.html" class="btn btn-primary">View Product</a>
+                        <a href="shop.html" class="btn btn-outline">Shop All</a>
+                    </div>
+                </div>
+            </div>
         </div>
+        <div class="hero-dots" id="heroDots">
+            <button class="dot active" data-slide="0"></button>
+            <button class="dot" data-slide="1"></button>
+            <button class="dot" data-slide="2"></button>
+            <button class="dot" data-slide="3"></button>
+        </div>
+    </section>
 
-        <p class="cs-footer">&copy; 2026 EcoRound Holsters. All rights reserved.</p>
+    <!-- Trust Bar -->
+    <section class="trust-bar">
+        <div class="container">
+            <div class="trust-items">
+                <div class="trust-item">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    <div>
+                        <strong>Lifetime Warranty</strong>
+                        <span>We stand behind every holster</span>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                    <div>
+                        <strong>Handcrafted in America</strong>
+                        <span>Made right here in the USA</span>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    <div>
+                        <strong>Free Shipping Over $100</strong>
+                        <span>Fast delivery nationwide</span>
+                    </div>
+                </div>
+                <div class="trust-item">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                    <div>
+                        <strong>Custom-Molded Fit</strong>
+                        <span>Made for your exact firearm</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Category Grid -->
+    <section class="categories section">
+        <div class="container">
+            <h2 class="section-title">SHOP BY CATEGORY</h2>
+            <p class="section-subtitle">Find the perfect carry solution for your lifestyle</p>
+            <div class="category-grid">
+                <a href="shop.html" class="category-card">
+                    <div class="category-img" style="background: linear-gradient(135deg, #34301c, #23200f);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M3 7h18v10H3z"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg>
+                    </div>
+                    <h3>IWB Holsters</h3>
+                    <span>Inside the Waistband</span>
+                </a>
+                <a href="shop.html" class="category-card">
+                    <div class="category-img" style="background: linear-gradient(135deg, #3a2a2a, #2a1a1a);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M12 7v10"/></svg>
+                    </div>
+                    <h3>OWB Holsters</h3>
+                    <span>Outside the Waistband</span>
+                </a>
+                <a href="shop.html" class="category-card">
+                    <div class="category-img" style="background: linear-gradient(135deg, #2a2a3a, #1a1a2a);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>Sidecar</h3>
+                    <span>Holster + Mag</span>
+                </a>
+                <a href="shop.html" class="category-card">
+                    <div class="category-img" style="background: linear-gradient(135deg, #3a3a40, #222228);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                    </div>
+                    <h3>Equipment Holsters</h3>
+                    <span>Carriers for your gear</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="products section">
+        <div class="container">
+            <h2 class="section-title">FEATURED PRODUCTS</h2>
+            <p class="section-subtitle">Handcrafted and custom-molded to your exact firearm</p>
+            <div class="product-grid">
+                <div class="product-card">
+                    <div class="product-badge">Best Seller</div>
+                    <div class="product-img"><img src="images/products/ecotuck-black.jpg" alt="EcoTuck IWB" style="width:100%;height:100%;object-fit:cover;"></div>
+                    <div class="product-info">
+                        <h3>EcoTuck IWB</h3>
+                        <p class="product-desc">Our flagship inside-the-waistband holster - adjustable retention &amp; cant, custom-molded for 400+ firearms.</p>
+                        <div class="product-price">
+                            <span class="price-current">From $55</span>
+                        </div>
+                        <a href="product-ecotuck-iwb.html" class="btn btn-primary btn-sm">Configure</a>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-badge new">Sidecar</div>
+                    <div class="product-img"><img src="images/products/ecotwin-camo.jpg" alt="EcoTwin Sidecar" style="width:100%;height:100%;object-fit:cover;"></div>
+                    <div class="product-info">
+                        <h3>EcoTwin Sidecar</h3>
+                        <p class="product-desc">Holster + spare-mag carrier in one slim rig - your reload always at the ready.</p>
+                        <div class="product-price">
+                            <span class="price-current">From $100</span>
+                        </div>
+                        <a href="product-ecotwin-iwb.html" class="btn btn-primary btn-sm">Configure</a>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img"><img src="images/products/ecosnug-carbon-purple.jpg" alt="EcoSnug OWB" style="width:100%;height:100%;object-fit:cover;"></div>
+                    <div class="product-info">
+                        <h3>EcoSnug OWB</h3>
+                        <p class="product-desc">Slim outside-the-waistband holster on belt loops - fast, comfortable all-day carry.</p>
+                        <div class="product-price">
+                            <span class="price-current">From $65</span>
+                        </div>
+                        <a href="product-ecosnug-owb.html" class="btn btn-primary btn-sm">Configure</a>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-badge">Paddle</div>
+                    <div class="product-img">
+                        <div class="product-placeholder">
+                            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
+                        </div>
+                    </div>
+                    <div class="product-info">
+                        <h3>EcoDraw OWB</h3>
+                        <p class="product-desc">Quick on/off paddle OWB - high-riding, fast, and comfortable.</p>
+                        <div class="product-price">
+                            <span class="price-current">From $69</span>
+                        </div>
+                        <a href="product-ecodraw-owb.html" class="btn btn-primary btn-sm">Configure</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gun Finder CTA -->
+    <section class="gun-finder">
+        <div class="container">
+            <div class="finder-content">
+                <div class="finder-text">
+                    <h2>FIND YOUR PERFECT HOLSTER</h2>
+                    <p>Select your firearm from our library of <strong>400+ gun models</strong> and we'll show you every holster that fits.</p>
+                    <div class="finder-form">
+                        <select class="finder-select" id="gunBrand" aria-label="Select firearm brand">
+                            <option value="">Select Brand</option>
+                            <option>Glock</option>
+                            <option>Sig Sauer</option>
+                            <option>Smith & Wesson</option>
+                            <option>Springfield Armory</option>
+                            <option>Ruger</option>
+                            <option>Beretta</option>
+                            <option>CZ</option>
+                            <option>FN</option>
+                            <option>HK</option>
+                            <option>Walther</option>
+                            <option>Taurus</option>
+                            <option>Kimber</option>
+                            <option>Canik</option>
+                        </select>
+                        <select class="finder-select" id="gunModel" aria-label="Select firearm model">
+                            <option value="">Select Model</option>
+                        </select>
+                        <a href="shop.html" class="btn btn-primary">Find Holsters</a>
+                    </div>
+                    <a href="/firearm-request.html" style="display:inline-block;margin-top:16px;color:var(--color-primary-hover);font-size:.9rem;">Don't see your firearm? Request a fit →</a>
+                </div>
+                <div class="finder-stats">
+                    <div class="stat">
+                        <span class="stat-number">400+</span>
+                        <span class="stat-label">Gun Models</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">50+</span>
+                        <span class="stat-label">Color Choices</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section class="reviews section">
+        <div class="container">
+            <h2 class="section-title">WHAT OUR CUSTOMERS SAY</h2>
+            <p class="section-subtitle">Verified reviews will appear here as our first orders ship</p>
+            <div class="review-empty">
+                <div class="review-stars" aria-hidden="true">
+                    <span>&#9734;</span><span>&#9734;</span><span>&#9734;</span><span>&#9734;</span><span>&#9734;</span>
+                </div>
+                <h3>Be the first to review</h3>
+                <p>We've just opened our doors, so there aren't any reviews yet. Carry an EcoRound holster and we'd love to hear how it's working out - your feedback could be the very first review on this page.</p>
+                <a href="mailto:info@ecoroundholsters.com?subject=My%20EcoRound%20review" class="btn btn-outline">Share your experience</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About / Why Us -->
+    <section class="why-us section">
+        <div class="container">
+            <div class="why-grid">
+                <div class="why-text">
+                    <h2>WHY ECOROUND?</h2>
+                    <p>At EcoRound Holsters, we believe in crafting holsters that perform without compromise. Every holster is hand-molded, hand-finished, and individually inspected right here in America.</p>
+                    <ul class="why-list">
+                        <li>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Precision-molded Kydex and hybrid designs</span>
+                        </li>
+                        <li>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Adjustable retention, cant, and ride height</span>
+                        </li>
+                        <li>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Custom fit for 400+ firearm models</span>
+                        </li>
+                        <li>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            <span>Backed by our lifetime warranty</span>
+                        </li>
+                    </ul>
+                    <a href="shop.html" class="btn btn-primary">Shop the Collection</a>
+                </div>
+                <div class="why-image">
+                    <div class="why-placeholder">
+                        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                        <span>Handcrafted Quality</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <h2>JOIN THE ECOROUND FAMILY</h2>
+                <p>Get exclusive deals, new product alerts, and carry tips delivered to your inbox.</p>
+                <form class="newsletter-form" id="newsletterForm">
+                    <input type="email" placeholder="Enter your email address" aria-label="Email address" required>
+                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+                <small>No spam, ever. Unsubscribe anytime.</small>
+            </div>
+        </div>
+    </section>
+
     </main>
 
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col footer-brand">
+                    <a href="/" class="logo footer-logo">
+                        <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+                        <span class="logo-sub">HOLSTERS</span>
+                    </a>
+                    <p>Premium handcrafted holsters made in America, custom-molded to your exact firearm.</p>
+                    <div class="social-links">
+                        <a href="https://www.facebook.com/profile.php?id=61590678295982" target="_blank" rel="noopener" aria-label="Facebook">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+                        </a>
+                        <a href="https://www.instagram.com/ecoroundholsters" target="_blank" rel="noopener" aria-label="Instagram">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+                        </a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Shop</h4>
+                    <ul>
+                        <li><a href="shop.html">Shop All</a></li>
+                        <li><a href="product-ecotuck-iwb.html">EcoTuck IWB</a></li>
+                        <li><a href="product-ecotwin-iwb.html">EcoTwin Sidecar</a></li>
+                        <li><a href="product-ecosnug-owb.html">EcoSnug OWB</a></li>
+                        <li><a href="product-ecodraw-owb.html">EcoDraw OWB</a></li>
+                        <li><a href="product-enforcer.html">Lock n Load</a></li>
+                        <li><a href="product-suupack.html">Suu Pack</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Help</h4>
+                    <ul>
+                        <li><a href="mailto:info@ecoroundholsters.com">Contact Us</a></li>
+                        <li><a href="mailto:info@ecoroundholsters.com?subject=Custom%20order">Custom Orders</a></li>
+                        <li><a href="mailto:info@ecoroundholsters.com?subject=Warranty%20claim">Warranty Claims</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 EcoRound Holsters. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="privacy.html">Privacy</a>
+                    <a href="terms.html">Terms</a>
+                    <a href="shipping-returns.html">Shipping &amp; Returns</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Search Modal -->
+    <div class="search-modal" id="searchModal">
+        <div class="search-modal-content">
+            <button class="search-close" id="searchClose">&times;</button>
+            <h3>Search Our Store</h3>
+            <form class="search-form">
+                <input type="text" placeholder="Search for holsters, gun models, accessories..." aria-label="Search products" autofocus>
+                <button type="submit">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                </button>
+            </form>
+            <div class="search-suggestions">
+                <span>Popular:</span>
+                <a href="shop.html">Glock 19</a>
+                <a href="shop.html">Sig P365</a>
+                <a href="shop.html">IWB</a>
+                <a href="shop.html">Appendix</a>
+            </div>
+        </div>
+    </div>
+
     <script>
-        document.getElementById('notifyForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            var input = this.querySelector('input');
-            var note = document.getElementById('notifyNote');
-            var btn = this.querySelector('button');
-            var email = input.value.trim();
-            if (!email) return;
-            btn.disabled = true;
-            btn.textContent = 'Sending…';
-            fetch('/api/signup', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, source: 'coming-soon' })
-            }).then(function (r) {
-                if (!r.ok) throw new Error('http ' + r.status);
-                input.value = '';
-                btn.textContent = "You're on the list!";
-                note.textContent = "Thanks - we'll email you the moment we go live.";
-            }).catch(function () {
-                btn.textContent = 'Notify Me';
-                note.textContent = 'Something went wrong - please try again.';
-            }).finally(function () {
-                btn.disabled = false;
-                setTimeout(function () { btn.textContent = 'Notify Me'; }, 4000);
+    /* Keep the featured "From $X" prices in sync with the live catalog. */
+    (function () {
+        fetch('/api/catalog').then(function (r) { return r.json(); }).then(function (cat) {
+            if (!cat || !cat.products) return;
+            var byId = {}; cat.products.forEach(function (p) { byId[p.id] = p; });
+            document.querySelectorAll('.product-card').forEach(function (card) {
+                var link = card.querySelector('a[href^="product-"]');
+                var priceEl = card.querySelector('.price-current');
+                if (!link || !priceEl) return;
+                var id = link.getAttribute('href').replace(/^product-/, '').replace(/\.html$/, '');
+                var p = byId[id]; if (!p) return;
+                var d = p.base / 100;
+                priceEl.textContent = 'From $' + (d % 1 === 0 ? d : d.toFixed(2));
             });
-        });
+        }).catch(function () {});
+    })();
     </script>
+    <script src="js/cart.js"></script>
+    <script src="js/guns-data.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/header-auth.js"></script>
     <script src="js/analytics.js"></script>
 </body>
 </html>

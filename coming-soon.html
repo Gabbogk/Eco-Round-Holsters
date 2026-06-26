@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoRound Holsters | Coming Soon</title>
+    <meta name="description" content="EcoRound Holsters - premium handcrafted holsters, launching soon. Sign up to be the first to know.">
+    <link rel="canonical" href="https://www.ecoroundholsters.com/">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="EcoRound Holsters">
+    <meta property="og:title" content="EcoRound Holsters | Premium Handcrafted Holsters">
+    <meta property="og:description" content="Premium handcrafted holsters, launching soon. Custom-molded to 400+ firearms, made in America. Sign up to be the first to know.">
+    <meta property="og:url" content="https://www.ecoroundholsters.com/">
+    <meta property="og:image" content="https://www.ecoroundholsters.com/images/products/ecotuck-black.jpg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="EcoRound Holsters | Premium Handcrafted Holsters">
+    <meta name="twitter:description" content="Premium handcrafted holsters, launching soon. Custom-molded to 400+ firearms, made in America.">
+    <meta name="twitter:image" content="https://www.ecoroundholsters.com/images/products/ecotuck-black.jpg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* ===== Coming Soon page layout (reuses tokens from styles.css) ===== */
+        .cs-wrap {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 56px 24px;
+            background:
+                radial-gradient(circle at 50% -10%, rgba(248, 208, 0, 0.18), transparent 55%),
+                linear-gradient(135deg, #141414 0%, #201c10 50%, #141414 100%);
+        }
+
+        .cs-logo {
+            transform: scale(1.4);
+            margin-bottom: 44px;
+        }
+
+        .cs-badge {
+            display: inline-block;
+            background: var(--color-primary); color: #1a1a1a;
+            padding: 6px 18px;
+            font-family: var(--font-heading);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 3px;
+            border-radius: 4px;
+            margin-bottom: 24px;
+        }
+
+        .cs-wrap h1 {
+            font-family: var(--font-heading);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 700;
+            letter-spacing: 4px;
+            line-height: 1.05;
+            margin-bottom: 20px;
+        }
+
+        .cs-wrap h1 .accent {
+            color: var(--color-primary);
+        }
+
+        .cs-lead {
+            max-width: 560px;
+            color: var(--color-text-muted);
+            font-size: 1.1rem;
+            line-height: 1.75;
+            margin: 0 auto 36px;
+        }
+
+        .cs-form {
+            display: flex;
+            gap: 12px;
+            max-width: 460px;
+            width: 100%;
+            margin: 0 auto 14px;
+        }
+
+        .cs-form input {
+            flex: 1;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            color: var(--color-text);
+            font-size: 0.95rem;
+            font-family: var(--font-body);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .cs-form input:focus {
+            border-color: var(--color-primary);
+        }
+
+        .cs-note {
+            color: var(--color-text-dim);
+            font-size: 0.82rem;
+            margin-bottom: 24px;
+        }
+
+        .cs-contact {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            color: var(--color-text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 52px;
+        }
+
+        .cs-contact svg {
+            color: var(--color-primary);
+            flex-shrink: 0;
+        }
+
+        .cs-contact a {
+            color: var(--color-primary-hover);
+            font-weight: 600;
+        }
+
+        .cs-contact a:hover {
+            text-decoration: underline;
+        }
+
+        .cs-trust {
+            display: flex;
+            gap: 44px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 48px;
+        }
+
+        .cs-trust-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cs-trust-item svg {
+            color: var(--color-primary);
+        }
+
+        .cs-trust-item strong {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+
+        .cs-trust-item span {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .cs-social {
+            margin-bottom: 32px;
+        }
+
+        .cs-footer {
+            color: var(--color-text-dim);
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 560px) {
+            .cs-form { flex-direction: column; }
+            .cs-logo { transform: scale(1.2); }
+            .cs-trust { gap: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="cs-wrap">
+        <a href="/" class="logo cs-logo">
+            <span class="logo-eco">ECO</span><span class="logo-round">ROUND</span>
+            <span class="logo-sub">HOLSTERS</span>
+        </a>
+
+        <span class="cs-badge">EARLY ORDERS OPEN</span>
+        <h1>COMING <span class="accent">SOON</span></h1>
+        <p class="cs-lead">We're putting the finishing touches on something built for everyday carry. Premium handcrafted holsters - engineered for comfort, built for reliability, and designed for your exact firearm.</p>
+
+        <form class="cs-form" id="notifyForm">
+            <input type="email" placeholder="Enter your email" required aria-label="Email address">
+            <button type="submit" class="btn btn-primary">Notify Me</button>
+        </form>
+        <p class="cs-note" id="notifyNote">Be the first to know when we launch. No spam, ever.</p>
+
+        <p class="cs-contact">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>
+            <span>Questions or early order requests? Email us at <a href="mailto:info@ecoroundholsters.com">info@ecoroundholsters.com</a></span>
+        </p>
+
+        <div class="cs-trust">
+            <div class="cs-trust-item">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                <strong>Lifetime Warranty</strong>
+                <span>On every holster</span>
+            </div>
+            <div class="cs-trust-item">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                <strong>Handcrafted in America</strong>
+                <span>Made in the USA</span>
+            </div>
+            <div class="cs-trust-item">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7h18v10H3z"/><path d="M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/></svg>
+                <strong>400+ Gun Models</strong>
+                <span>Custom-fit options</span>
+            </div>
+        </div>
+
+        <div class="social-links cs-social">
+            <a href="https://www.facebook.com/profile.php?id=61590678295982" target="_blank" rel="noopener" aria-label="Facebook">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+            </a>
+            <a href="https://www.instagram.com/ecoroundholsters" target="_blank" rel="noopener" aria-label="Instagram">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+            </a>
+        </div>
+
+        <p class="cs-footer">&copy; 2026 EcoRound Holsters. All rights reserved.</p>
+    </main>
+
+    <script>
+        document.getElementById('notifyForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var input = this.querySelector('input');
+            var note = document.getElementById('notifyNote');
+            var btn = this.querySelector('button');
+            var email = input.value.trim();
+            if (!email) return;
+            btn.disabled = true;
+            btn.textContent = 'Sending…';
+            fetch('/api/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, source: 'coming-soon' })
+            }).then(function (r) {
+                if (!r.ok) throw new Error('http ' + r.status);
+                input.value = '';
+                btn.textContent = "You're on the list!";
+                note.textContent = "Thanks - we'll email you the moment we go live.";
+            }).catch(function () {
+                btn.textContent = 'Notify Me';
+                note.textContent = 'Something went wrong - please try again.';
+            }).finally(function () {
+                btn.disabled = false;
+                setTimeout(function () { btn.textContent = 'Notify Me'; }, 4000);
+            });
+        });
+    </script>
+    <script src="js/analytics.js"></script>
+</body>
+</html>
