@@ -9,7 +9,7 @@
 window.GUN_DATA = {
     'Glock': ['G17', 'G19', 'G19X', 'G26', 'G43', 'G43X', 'G45', 'G48'],
     'Sig Sauer': ['P320', 'P365', 'P365X', 'P365XL', 'P226', 'P229', 'P238', 'P938'],
-    'Smith & Wesson': ['M&P Shield', 'M&P Shield Plus', 'M&P 2.0', 'SD9 VE', 'CSX'],
+    'Smith & Wesson': ['M&P Shield', 'M&P Shield Plus', 'M&P 2.0', 'SD9 VE', 'CSX', '3914 DAO'],
     'Springfield Armory': ['Hellcat', 'Hellcat Pro', 'XD-S', 'XD-M', 'Echelon', '1911'],
     'Ruger': ['LCP MAX', 'Security-9', 'SR9c', 'MAX-9', 'LC9s', '57'],
     'Beretta': ['92FS', 'PX4 Storm', 'APX', 'Nano', 'M9A3'],
