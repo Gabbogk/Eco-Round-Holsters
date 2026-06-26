@@ -409,8 +409,15 @@ ul {
     pointer-events: none;
 }
 @media (max-width: 768px) {
-    /* Recede behind the text on phones so the copy stays readable. */
-    .hotm-img { opacity: 0.18; right: -8%; max-width: 72%; height: 78%; }
+    /* Phones can't fit the holster beside the copy, so STACK it: crisp holster on
+       top, copy centered below - shows the product like desktop, just vertically. */
+    /* Holster on the RIGHT like desktop (and the original mobile), but CRISP instead
+       of a faint ghost; copy sits in a constrained left column so they don't overlap. */
+    .hotm-slide .hero-content { max-width: 54%; }
+    .hotm-slide .hero-content h1 { font-size: 1.7rem; }
+    .hotm-slide .hero-content p { display: none; } /* narrow left column on phones - drop the blurb */
+    .hotm-slide .hero-ctas .btn-outline { display: none; }
+    .hotm-img { opacity: 1; right: -4%; height: 66%; max-width: 50%; }
 }
 
 .hero-content {
